@@ -1,12 +1,33 @@
 import json
 import boto3
 import os
+import hashlib
 from botocore.exceptions import ClientError
 
-# Initialize AWS Cognito client
+# Initialize AWS Cognito and DynamoDB clients
 cognito = boto3.client('cognito-idp')
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
 
 def lambda_handler(event, context):
+    # Handle Cognito Lambda triggers
+    if 'triggerSource' in event:
+        if event['triggerSource'] == 'DefineAuthChallenge_Authentication':
+            return define_auth_challenge(event)
+        elif event['triggerSource'] == 'CreateAuthChallenge_Authentication':
+            return create_auth_challenge(event)
+        elif event['triggerSource'] == 'VerifyAuthChallengeResponse_Authentication':
+            return verify_auth_challenge_response(event)
+        else:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'message': 'Unsupported trigger source'})
+            }
+    # Handle API Gateway requests
+    else:
+        return api_gateway_handler(event, context)
+
+def api_gateway_handler(event, context):
     try:
         body = json.loads(event['body'])
         action = body.get('action', 'login')
@@ -16,14 +37,17 @@ def lambda_handler(event, context):
         if action == 'signup':
             email = body.get('email')
             password = body.get('password')
-            role = body.get('role', 'Registered Customer')
-            otp = body.get('otp')  # Add OTP field for verification
+            role = body.get('role', 'Customer')
+            security_question = body.get('security_question')
+            security_answer = body.get('security_answer')
+            otp = body.get('otp')
 
             if not email or not password:
                 return {
                     'statusCode': 400,
                     'body': json.dumps({'message': 'Missing email or password'})
                 }
+
             if otp:
                 cognito.confirm_sign_up(
                     ClientId=client_id,
@@ -34,6 +58,7 @@ def lambda_handler(event, context):
                     'statusCode': 200,
                     'body': json.dumps({'message': 'Registration and email verification successful.'})
                 }
+
             # Register user with Cognito
             response = cognito.sign_up(
                 ClientId=client_id,
@@ -44,6 +69,18 @@ def lambda_handler(event, context):
                     {'Name': 'custom:custom:role', 'Value': role}
                 ]
             )
+
+            # Hash and store security answer in DynamoDB
+            if security_question and security_answer:
+                hashed_answer = hashlib.sha256(security_answer.encode()).hexdigest()
+                table.put_item(
+                    Item={
+                        'userID': email,
+                        'securityQuestion': security_question,
+                        'hashedAnswer': hashed_answer,
+                        'validated': False
+                    }
+                )
 
             return {
                 'statusCode': 200,
@@ -60,39 +97,57 @@ def lambda_handler(event, context):
                     'body': json.dumps({'message': 'Missing email or password'})
                 }
 
-            # Initiate authentication with Cognito
+            # Initiate authentication with Cognito using custom auth flow
             response = cognito.initiate_auth(
                 ClientId=client_id,
-                AuthFlow='USER_PASSWORD_AUTH',
+                AuthFlow='CUSTOM_AUTH',
                 AuthParameters={'USERNAME': email, 'PASSWORD': password}
             )
 
-            # Handle NEW_PASSWORD_REQUIRED challenge
-            if 'ChallengeName' in response and response['ChallengeName'] == 'NEW_PASSWORD_REQUIRED':
-                # Automatically set a new password (for testing only)
-                new_password = "AutoSetPassword123!"  # Change this to a secure default
-                cognito.respond_to_auth_challenge(
-                    ClientId=client_id,
-                    ChallengeName='NEW_PASSWORD_REQUIRED',
-                    Session=response['Session'],
-                    ChallengeResponses={
-                        'USERNAME': email,
-                        'NEW_PASSWORD': new_password
-                    }
-                )
-                # Re-authenticate with the new password
-                response = cognito.initiate_auth(
-                    ClientId=client_id,
-                    AuthFlow='USER_PASSWORD_AUTH',
-                    AuthParameters={'USERNAME': email, 'PASSWORD': new_password}
-                )
-
-            # Authentication successful, return ID token
-            id_token = response['AuthenticationResult']['IdToken']
+            # If tokens are issued, return them (post-challenge success)
+            if 'AuthenticationResult' in response:
+                id_token = response['AuthenticationResult']['IdToken']
+                return {
+                    'statusCode': 200,
+                    'body': json.dumps({'message': 'Login successful', 'idToken': id_token})
+                }
+            # If challenge is required, Cognito triggers will handle it
             return {
-                'statusCode': 200,
-                'body': json.dumps({'message': 'Login successful', 'idToken': id_token})
+                'statusCode': 401,
+                'body': json.dumps({'message': 'Authentication challenge required', 'session': response['Session']})
             }
+        elif action == 'respond_to_challenge':
+            email = body.get('email')
+            session = body.get('session')
+            answer = body.get('answer')
+
+            if not email or not session or not answer:
+                return {
+                    'statusCode': 400,
+                    'body': json.dumps({'message': 'Missing email, session, or answer'})
+                }
+
+            response = cognito.respond_to_auth_challenge(
+                ClientId=client_id,
+                ChallengeName='CUSTOM_CHALLENGE',
+                Session=session,
+                ChallengeResponses={
+                    'USERNAME': email,
+                    'ANSWER': answer
+                }
+            )
+
+            if 'AuthenticationResult' in response:
+                id_token = response['AuthenticationResult']['IdToken']
+                return {
+                    'statusCode': 200,
+                    'body': json.dumps({'message': 'Login successful', 'idToken': id_token})
+                }
+            else:
+                return {
+                    'statusCode': 401,
+                    'body': json.dumps({'message': 'Authentication failed'})
+                }
         elif action == 'change_password':
             email = body.get('email')
             old_password = body.get('oldPassword')
@@ -105,7 +160,6 @@ def lambda_handler(event, context):
                     'body': json.dumps({'message': 'Missing email, oldPassword, newPassword, or session'})
                 }
 
-            # Respond to NEW_PASSWORD_REQUIRED challenge
             response = cognito.respond_to_auth_challenge(
                 ClientId=client_id,
                 ChallengeName='NEW_PASSWORD_REQUIRED',
@@ -116,7 +170,6 @@ def lambda_handler(event, context):
                 }
             )
 
-            # Authentication successful after new password
             id_token = response['AuthenticationResult']['IdToken']
             return {
                 'statusCode': 200,
@@ -140,3 +193,55 @@ def lambda_handler(event, context):
             'statusCode': 500,
             'body': json.dumps({'message': 'Internal server error', 'error': str(e)})
         }
+
+def define_auth_challenge(event):
+    # Check if user has an unvalidated security answer
+    email=event['request']['userAttributes']['email']
+    item = table.get_item(Key={'userID': email}).get('Item')
+    
+    if item and not item.get('validated', False):
+        event['response']['challengeName'] = 'CUSTOM_CHALLENGE'
+        event['response']['issueTokens'] = False
+        event['response']['failAuthentication'] = False
+    else:
+        event['response']['challengeName'] = 'PASSWORD_VERIFIER'
+        event['response']['issueTokens'] = True
+        event['response']['failAuthentication'] = False
+    
+    return event
+
+def create_auth_challenge(event):
+    # Provide the security question as the challenge
+    email=event['request']['userAttributes']['email']
+    item = table.get_item(Key={'userID': email}).get('Item')
+    
+    if item and not item.get('validated', False):
+        event['response']['publicChallengeParameters'] = {
+            'securityQuestion': item['securityQuestion']
+        }
+        event['response']['privateChallengeParameters'] = {
+            'hashedAnswer': item['hashedAnswer']
+        }
+    
+    event['response']['challengeMetadata'] = 'SECURITY_CHALLENGE'
+    return event
+
+def verify_auth_challenge_response(event):
+    # Validate the user's security answer
+    email=event['request']['userAttributes']['email']
+    user_answer = event['request']['challengeAnswer']
+    item = table.get_item(Key={'userID': email}).get('Item')
+    
+    if item and not item.get('validated', False):
+        hashed_input = hashlib.sha256(user_answer.encode()).hexdigest()
+        if hashed_input == item['hashedAnswer']:
+            table.update_item(
+                Key={'userID': email},
+                UpdateExpression='SET validated = :val',
+                ExpressionAttributeValues={':val': True}
+            )
+            event['response']['answerCorrect'] = True
+        else:
+            event['response']['answerCorrect'] = False
+    
+    return event

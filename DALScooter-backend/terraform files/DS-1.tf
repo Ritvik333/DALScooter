@@ -4,9 +4,9 @@ provider "aws" {
 
 # DynamoDB Table for User Details
 resource "aws_dynamodb_table" "dalscooter_users" {
-  name           = "DALScooterUsers"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "userID"
+  name         = "DALScooterUsers"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "userID"
 
   attribute {
     name = "userID"
@@ -14,18 +14,36 @@ resource "aws_dynamodb_table" "dalscooter_users" {
   }
 }
 
+# Lambda Function for Auth Handler (NO cycle-inducing env vars)
+resource "aws_lambda_function" "auth_handler_lambda" {
+  filename         = "auth_handler.zip"
+  function_name    = "DALScooterAuthHandler"
+  role             = "arn:aws:iam::101784748999:role/LabRole"
+  handler          = "lambda_function.lambda_handler"
+  runtime          = "python3.9"
+  timeout          = 30
+  source_code_hash = filebase64sha256("auth_handler.zip")
+
+  environment {
+    variables = {
+      DYNAMODB_TABLE = aws_dynamodb_table.dalscooter_users.name
+      # USER_POOL_ID and CLIENT_ID intentionally omitted to avoid dependency cycle
+    }
+  }
+}
+
 # Cognito User Pool
 resource "aws_cognito_user_pool" "dalscooter_user_pool" {
-  name = "DALScooterUserPool"
-
-  username_attributes = ["email"]
+  name                     = "DALScooterUserPool"
+  username_attributes      = ["email"]
   auto_verified_attributes = ["email"]
+  mfa_configuration        = "OFF"
 
   password_policy {
     minimum_length    = 8
     require_lowercase = true
     require_numbers   = true
-    require_symbols   = true
+    require_symbols   = false
     require_uppercase = true
   }
 
@@ -44,43 +62,33 @@ resource "aws_cognito_user_pool" "dalscooter_user_pool" {
     developer_only_attribute = false
   }
 
-  mfa_configuration = "OFF"
-  lifecycle {
-    ignore_changes = [schema]
+  lambda_config {
+    define_auth_challenge           = aws_lambda_function.auth_handler_lambda.arn
+    create_auth_challenge           = aws_lambda_function.auth_handler_lambda.arn
+    verify_auth_challenge_response = aws_lambda_function.auth_handler_lambda.arn
   }
 }
 
 # Cognito User Pool Client
 resource "aws_cognito_user_pool_client" "dalscooter_app_client" {
-  name         = "DALScooterAppClient"
-  user_pool_id = aws_cognito_user_pool.dalscooter_user_pool.id
+  name            = "DALScooterAppClient"
+  user_pool_id    = aws_cognito_user_pool.dalscooter_user_pool.id
+  generate_secret = false
 
-  generate_secret     = false
   explicit_auth_flows = [
-    "ALLOW_ADMIN_USER_PASSWORD_AUTH",  # Explicitly enable for admin auth
-    "ALLOW_USER_PASSWORD_AUTH",        # For client-side auth
+    "ALLOW_CUSTOM_AUTH",
+    "ALLOW_USER_PASSWORD_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH"
   ]
 }
 
-# Lambda Function for Auth Handler
-resource "aws_lambda_function" "auth_handler_lambda" {
-  filename      = "auth_handler.zip"
-  function_name = "DALScooterAuthHandler"
-  role          = "arn:aws:iam::101784748999:role/LabRole"
-  handler       = "lambda_function.lambda_handler"
-  runtime       = "python3.9"
-  timeout       = 30
-
-  source_code_hash = filebase64sha256("auth_handler.zip")
-
-  environment {
-    variables = {
-      USER_POOL_ID        = aws_cognito_user_pool.dalscooter_user_pool.id
-      DYNAMODB_TABLE      = aws_dynamodb_table.dalscooter_users.name
-      USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.dalscooter_app_client.id
-    }
-  }
+# Lambda permission for Cognito
+resource "aws_lambda_permission" "cognito_invoke" {
+  statement_id  = "AllowCognitoInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.auth_handler_lambda.function_name
+  principal     = "cognito-idp.amazonaws.com"
+  source_arn    = aws_cognito_user_pool.dalscooter_user_pool.arn
 }
 
 # API Gateway REST API
