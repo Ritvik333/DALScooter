@@ -106,6 +106,7 @@ resource "aws_sqs_queue" "message_processing_with_dlq" {
   max_message_size          = 262144  # 256 KB
   message_retention_seconds = 86400   # 24 hours
   receive_wait_time_seconds = 10
+  visibility_timeout_seconds = 120
   
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.message_processing_dlq.arn
