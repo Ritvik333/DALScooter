@@ -87,20 +87,6 @@ resource "aws_sns_topic" "notifications" {
 # -----------------------------------------------------
 # SQS - Message Processing Queue
 # -----------------------------------------------------
-resource "aws_sqs_queue" "message_processing" {
-  name                      = "DALScooter-MessageProcessing"
-  delay_seconds             = 0
-  max_message_size          = 262144  # 256 KB
-  message_retention_seconds = 86400   # 24 hours
-  receive_wait_time_seconds = 10
-  
-  tags = {
-    Name        = "DALScooter-MessageProcessing"
-    Environment = "dev"
-    Module      = "Message-Passing"
-  }
-}
-
 # Dead Letter Queue for Message Processing
 resource "aws_sqs_queue" "message_processing_dlq" {
   name                      = "DALScooter-MessageProcessing-DLQ"
@@ -113,7 +99,7 @@ resource "aws_sqs_queue" "message_processing_dlq" {
   }
 }
 
-# Update main queue to use DLQ
+# Main Queue with DLQ
 resource "aws_sqs_queue" "message_processing_with_dlq" {
   name                      = "DALScooter-MessageProcessing"
   delay_seconds             = 0
