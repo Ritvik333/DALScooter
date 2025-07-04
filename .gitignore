@@ -1,0 +1,39 @@
+# Terraform state files and directories
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfstate
+*.tfstate.backup
+
+# Terraform plan files
+terraform.tfplan
+*.tfplan
+
+# Terraform lock file
+.terraform.lock.hcl
+
+# Terraform module and provider cache
+.terraform/modules/
+.terraform/providers/
+
+# Lambda deployment artifacts
+auth_handler.zip
+
+# Environment variables and secrets
+*.env
+.env
+*.secret
+*.credentials
+
+# Log files and temporary files
+*.log
+*.tmp
+
+# IDE and editor files
+.idea/
+*.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# macOS system files
+.DS_Store
