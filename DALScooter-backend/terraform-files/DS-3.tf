@@ -135,8 +135,10 @@ resource "aws_sns_topic_subscription" "customer_concerns_to_sqs" {
 # -----------------------------------------------------
 # Use LabRole for Lambda Functions
 # -----------------------------------------------------
-# Note: We're using the pre-created LabRole as per Learner's Lab requirements
-# No need to create new IAM roles or policies
+# Look up the LabRole ARN to use with Lambda functions
+data "aws_iam_role" "lab_role" {
+  name = "LabRole"
+}
 
 # -----------------------------------------------------
 # Lambda Functions
@@ -160,7 +162,7 @@ resource "aws_lambda_function" "message_publisher" {
   function_name    = "DALScooter-MessagePublisher"
   filename         = data.archive_file.message_publisher_zip.output_path
   source_code_hash = data.archive_file.message_publisher_zip.output_base64sha256
-  role             = "LabRole"
+  role             = data.aws_iam_role.lab_role.arn
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.9"
   timeout          = 30
@@ -235,7 +237,7 @@ resource "aws_api_gateway_method" "post_concern" {
   rest_api_id   = aws_api_gateway_rest_api.message_api.id
   resource_id   = aws_api_gateway_resource.concerns.id
   http_method   = "POST"
-  authorization_type = "NONE"  # Change to "COGNITO_USER_POOLS" when integrating with Auth module
+  authorization = "NONE"  # Change to "COGNITO_USER_POOLS" when integrating with Auth module
 }
 
 resource "aws_api_gateway_integration" "lambda_integration" {
