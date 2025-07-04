@@ -1,5 +1,17 @@
 # DS-3.tf - Message Passing Module Infrastructure
 
+# Set the AWS provider with region
+provider "aws" {
+  region = "us-east-1"  # Use us-east-1 for Learner's Lab
+}
+
+# -----------------------------------------------------
+# Data source to get LabRole ARN
+# -----------------------------------------------------
+data "aws_iam_role" "lab_role" {
+  name = "LabRole"
+}
+
 # -----------------------------------------------------
 # DynamoDB - Message Table
 # -----------------------------------------------------
@@ -133,14 +145,6 @@ resource "aws_sns_topic_subscription" "customer_concerns_to_sqs" {
 }
 
 # -----------------------------------------------------
-# Use LabRole for Lambda Functions
-# -----------------------------------------------------
-# Look up the LabRole ARN to use with Lambda functions
-data "aws_iam_role" "lab_role" {
-  name = "LabRole"
-}
-
-# -----------------------------------------------------
 # Lambda Functions
 # -----------------------------------------------------
 
@@ -187,7 +191,7 @@ resource "aws_lambda_function" "message_processor" {
   function_name    = "DALScooter-MessageProcessor"
   filename         = data.archive_file.message_processor_zip.output_path
   source_code_hash = data.archive_file.message_processor_zip.output_base64sha256
-  role             = "LabRole"
+  role             = data.aws_iam_role.lab_role.arn
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.9"
   timeout          = 60
@@ -250,13 +254,20 @@ resource "aws_api_gateway_integration" "lambda_integration" {
   uri                     = aws_lambda_function.message_publisher.invoke_arn
 }
 
+# Fixed API Gateway Deployment
 resource "aws_api_gateway_deployment" "api_deployment" {
   depends_on = [
     aws_api_gateway_integration.lambda_integration
   ]
 
   rest_api_id = aws_api_gateway_rest_api.message_api.id
-  stage_name  = "dev"
+}
+
+# Create API Gateway Stage separately
+resource "aws_api_gateway_stage" "dev" {
+  deployment_id = aws_api_gateway_deployment.api_deployment.id
+  rest_api_id   = aws_api_gateway_rest_api.message_api.id
+  stage_name    = "dev"
 }
 
 resource "aws_lambda_permission" "api_gateway_lambda" {
@@ -271,7 +282,7 @@ resource "aws_lambda_permission" "api_gateway_lambda" {
 # Outputs
 # -----------------------------------------------------
 output "api_gateway_url" {
-  value = "${aws_api_gateway_deployment.api_deployment.invoke_url}/concerns"
+  value = "${aws_api_gateway_stage.dev.invoke_url}/concerns"
   description = "URL for the Message API concerns endpoint"
 }
 
