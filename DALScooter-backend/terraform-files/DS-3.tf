@@ -122,6 +122,30 @@ resource "aws_sqs_queue" "message_processing_with_dlq" {
   depends_on = [aws_sqs_queue.message_processing_dlq]
 }
 
+# SQS Queue Policy to receive data from SNS
+resource "aws_sqs_queue_policy" "message_processing_policy" {
+  queue_url = aws_sqs_queue.message_processing_with_dlq.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "sns.amazonaws.com"
+        }
+        Action = "sqs:SendMessage"
+        Resource = aws_sqs_queue.message_processing_with_dlq.arn
+        Condition = {
+          ArnEquals = {
+            "aws:SourceArn" = aws_sns_topic.customer_concerns.arn
+          }
+        }
+      }
+    ]
+  })
+}
+
 # -----------------------------------------------------
 # SNS Subscription to SQS
 # -----------------------------------------------------
