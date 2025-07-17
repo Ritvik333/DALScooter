@@ -2,6 +2,8 @@ import json
 import boto3
 import os
 import hashlib
+import random
+import string
 from botocore.exceptions import ClientError
 
 # Initialize AWS Cognito and DynamoDB clients
@@ -78,7 +80,10 @@ def api_gateway_handler(event, context):
                         'userID': email,
                         'securityQuestion': security_question,
                         'hashedAnswer': hashed_answer,
-                        'validated': False
+                        'validated': False,
+                        'cipherPlain': None,
+                        'cipherShift': None,
+                        'cipherValidated': False
                     }
                 )
 
@@ -107,9 +112,10 @@ def api_gateway_handler(event, context):
             # If tokens are issued, return them (post-challenge success)
             if 'AuthenticationResult' in response:
                 id_token = response['AuthenticationResult']['IdToken']
+                access_token = response['AuthenticationResult']['AccessToken']
                 return {
                     'statusCode': 200,
-                    'body': json.dumps({'message': 'Login successful', 'idToken': id_token})
+                    'body': json.dumps({'message': 'Login successful', 'idToken': id_token, 'AccessToken':access_token})
                 }
             # If challenge is required, Cognito triggers will handle it
             return {
@@ -139,15 +145,27 @@ def api_gateway_handler(event, context):
 
             if 'AuthenticationResult' in response:
                 id_token = response['AuthenticationResult']['IdToken']
+                access_token = response['AuthenticationResult']['AccessToken']
                 return {
                     'statusCode': 200,
-                    'body': json.dumps({'message': 'Login successful', 'idToken': id_token})
+                    'body': json.dumps({'message': 'Login successful', 'idToken': id_token, 'AccessToken':access_token})
+                }
+            elif 'ChallengeName' in response:
+                challenge_params = response.get('ChallengeParameters', {})
+                return {
+                'statusCode': 401,
+                'body': json.dumps({
+                    'message': 'Authentication challenge required',
+                    'challenge': challenge_params.get('type', 'security_question'),
+                    'cipherText': challenge_params.get('cipherText'),
+                    'session': response['Session']
+                    })
                 }
             else:
                 return {
-                    'statusCode': 401,
-                    'body': json.dumps({'message': 'Authentication failed'})
-                }
+                'statusCode': 401,
+                'body': json.dumps({'message': 'Authentication failed'})
+                    }
         elif action == 'change_password':
             email = body.get('email')
             old_password = body.get('oldPassword')
@@ -176,6 +194,32 @@ def api_gateway_handler(event, context):
                 'body': json.dumps({'message': 'Password changed successfully', 'idToken': id_token})
             }
 
+        elif action == 'logout':
+            email = body.get('email')
+            access_token = body.get('accessToken')
+
+            if not email or not access_token:
+                logger.error("Missing email or accessToken")
+                return {
+                    'statusCode': 400,
+                    'body': json.dumps({'message': 'Missing email or accessToken'})
+                }
+
+            # Invalidate all tokens for the user
+            cognito.global_sign_out(
+                AccessToken=access_token
+            )
+            # Reset validation flags to enforce challenges on next login
+            table.update_item(
+                Key={'userID': email},
+                UpdateExpression='SET validated = :val, cipherValidated = :val',
+                ExpressionAttributeValues={':val': False}
+            )
+            return {
+                'statusCode': 200,
+                'body': json.dumps({'message': 'Logout successful. All sessions invalidated.'})
+            }
+
         else:
             return {
                 'statusCode': 400,
@@ -194,12 +238,22 @@ def api_gateway_handler(event, context):
             'body': json.dumps({'message': 'Internal server error', 'error': str(e)})
         }
 
+def generate_caesar_challenge():
+    shift = 1
+    text = ''.join(random.choices(string.ascii_lowercase, k=5))
+    cipher = ''.join(chr(((ord(c) - 97 + shift) % 26) + 97) for c in text)
+    return text, cipher, shift
+
 def define_auth_challenge(event):
     # Check if user has an unvalidated security answer
     email=event['request']['userAttributes']['email']
     item = table.get_item(Key={'userID': email}).get('Item')
     
     if item and not item.get('validated', False):
+        event['response']['challengeName'] = 'CUSTOM_CHALLENGE'
+        event['response']['issueTokens'] = False
+        event['response']['failAuthentication'] = False
+    elif item and not item.get('cipherValidated', False):
         event['response']['challengeName'] = 'CUSTOM_CHALLENGE'
         event['response']['issueTokens'] = False
         event['response']['failAuthentication'] = False
@@ -223,6 +277,23 @@ def create_auth_challenge(event):
             'hashedAnswer': item['hashedAnswer']
         }
     
+    elif item and not item.get('cipherValidated', False):
+        plain, ciphered, shift = generate_caesar_challenge()
+        # Store in Dynamo
+        table.update_item(
+            Key={'userID': email},
+            UpdateExpression='SET cipherPlain = :plain, cipherShift = :shift',
+            ExpressionAttributeValues={':plain': plain, ':shift': shift}
+        )
+        event['response']['publicChallengeParameters'] = {
+            'type': 'cipher',
+            'cipherText': ciphered
+        }
+        event['response']['privateChallengeParameters'] = {
+            'expectedAnswer': plain
+        }
+
+
     event['response']['challengeMetadata'] = 'SECURITY_CHALLENGE'
     return event
 
@@ -243,5 +314,14 @@ def verify_auth_challenge_response(event):
             event['response']['answerCorrect'] = True
         else:
             event['response']['answerCorrect'] = False
-    
+    elif item and not item.get('cipherValidated', False):
+        if user_answer.lower() == item['cipherPlain']:
+            table.update_item(
+                Key={'userID': email},
+                UpdateExpression='SET cipherValidated = :val',
+                ExpressionAttributeValues={':val': True}
+            )
+            event['response']['answerCorrect'] = True
+        else:
+            event['response']['answerCorrect'] = False
     return event
