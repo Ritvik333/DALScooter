@@ -18,7 +18,7 @@ resource "aws_dynamodb_table" "dalscooter_users" {
 resource "aws_lambda_function" "auth_handler_lambda" {
   filename         = "auth_handler.zip"
   function_name    = "DALScooterAuthHandler"
-  role             = "arn:aws:iam::101784748999:role/LabRole"
+  role             = "arn:aws:iam::802805047192:role/LabRole"
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.9"
   timeout          = 30
