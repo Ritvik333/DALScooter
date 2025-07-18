@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import RegistrationForm from './components/RegistrationForm';
+import Dashboard from './components/Dashboard';
 
 const App = () => {
   const [selectedRole, setSelectedRole] = useState(null);
+  const [showDashboard, setShowDashboard] = useState(false);
+
+  if (showDashboard) {
+    return <Dashboard role={selectedRole || "guest"} />;
+  }
 
   if (!selectedRole) {
     return (
@@ -19,6 +25,15 @@ const App = () => {
           onClick={() => setSelectedRole('Operator')}
         >
           Operator
+        </button>
+
+        <hr className="w-full my-4 border-gray-400" />
+
+        <button
+          className="bg-gray-800 text-white px-6 py-3 rounded hover:bg-gray-900"
+          onClick={() => setShowDashboard(true)}
+        >
+          🔓 Bypass Login → Go to Dashboard
         </button>
       </div>
     );
