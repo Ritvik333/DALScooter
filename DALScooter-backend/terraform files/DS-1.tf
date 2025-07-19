@@ -18,7 +18,7 @@ resource "aws_dynamodb_table" "dalscooter_users" {
 resource "aws_lambda_function" "auth_handler_lambda" {
   filename         = "auth_handler.zip"
   function_name    = "DALScooterAuthHandler"
-  role             = "arn:aws:iam::101784748999:role/LabRole"
+  role             = "arn:aws:iam::959817979665:role/LabRole"
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.9"
   timeout          = 30
@@ -27,8 +27,8 @@ resource "aws_lambda_function" "auth_handler_lambda" {
   environment {
     variables = {
       DYNAMODB_TABLE = aws_dynamodb_table.dalscooter_users.name
-      #USER_POOL_ID        = "us-east-1_HEWUlCpbQ"
-      #USER_POOL_CLIENT_ID = "1k0g35186fql2ksgc3j3db11k9"
+      USER_POOL_ID        = "us-east-1_G4J7SVUHQ"
+      USER_POOL_CLIENT_ID = "43tro3q7heuv9ar756la096koq"
       # USER_POOL_ID and CLIENT_ID intentionally omitted to avoid dependency cycle
     }
   }
@@ -63,15 +63,30 @@ resource "aws_cognito_user_pool" "dalscooter_user_pool" {
     mutable                  = true
     developer_only_attribute = false
   }
+  # schema {
+  # name                     = "custom:sec_question"
+  # attribute_data_type      = "String"
+  # required                 = false
+  # mutable                  = true
+  # }
+
+  # schema {
+  #   name                     = "custom:sec_answer"
+  #   attribute_data_type      = "String"
+  #   required                 = false
+  #   mutable                  = true
+  # }
 
   lambda_config {
     define_auth_challenge           = aws_lambda_function.auth_handler_lambda.arn
     create_auth_challenge           = aws_lambda_function.auth_handler_lambda.arn
     verify_auth_challenge_response = aws_lambda_function.auth_handler_lambda.arn
   }
+  
   lifecycle {
     ignore_changes = [schema]
   }
+
 }
 
 # Cognito User Pool Client
@@ -223,6 +238,25 @@ resource "aws_api_gateway_integration_response" "options_integration_response_20
   depends_on = [aws_api_gateway_integration.options_integration]
 }
 
+resource "aws_api_gateway_method_response" "auth_post_method_response_400" {
+  rest_api_id = aws_api_gateway_rest_api.dalscooter_api.id
+  resource_id = aws_api_gateway_resource.auth_resource.id
+  http_method = "POST"
+  status_code = "400"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Headers" = true
+  }
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+}
+
+
+
 # Lambda Permission for API Gateway
 resource "aws_lambda_permission" "api_gateway_invoke" {
   statement_id  = "AllowAPIGatewayInvoke"
@@ -276,3 +310,4 @@ output "api_gateway_endpoint" {
   description = "API Gateway endpoint URL for /auth"
   value       = "${aws_api_gateway_stage.dalscooter_api_stage.invoke_url}/auth"
 }
+

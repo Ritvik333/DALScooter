@@ -137,7 +137,7 @@ const RegistrationForm = ({ role }) => {
   const [message, setMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  const apiEndpoint = "https://omnxrn6761.execute-api.us-east-1.amazonaws.com/prod/auth"
+  const apiEndpoint = "https://xza3hz7hal.execute-api.us-east-1.amazonaws.com/prod/auth"
 
   const securityQuestions = [
     "What is your pet's name?",
