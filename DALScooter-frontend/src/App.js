@@ -3,11 +3,15 @@
 import { useState } from "react"
 import { BikeIcon as Scooter, ArrowLeft, Sparkles } from "lucide-react"
 import RegistrationForm from "./components/RegistrationForm"
-
 import Dashboard from './components/Dashboard'
 
 const App = () => {
-  const [selectedRole, setSelectedRole] = useState(null)
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [showDashboard, setShowDashboard] = useState(false);
+
+  if (showDashboard) {  
+    return <Dashboard role={selectedRole || "guest"} />;
+  }
 
   if (!selectedRole) {
     return (
@@ -74,6 +78,12 @@ const App = () => {
               </button>
             </p>
           </div>
+          <button
+          className="bg-gray-800 text-white px-6 py-3 rounded hover:bg-gray-900"
+          onClick={() => setShowDashboard(true)}
+        >
+          🔓 Bypass Login → Go to Dashboard
+        </button>
         </div>
 
         {/* Footer */}
@@ -95,12 +105,6 @@ const App = () => {
           Back to role selection
         </button>
         <RegistrationForm role={selectedRole} />
-        <button
-          className="bg-gray-800 text-white px-6 py-3 rounded hover:bg-gray-900"
-          onClick={() => setShowDashboard(true)}
-        >
-          🔓 Bypass Login → Go to Dashboard
-        </button>
       </div>
     </div>
   )
