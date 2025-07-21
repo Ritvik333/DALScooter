@@ -39,6 +39,7 @@ def api_gateway_handler(event, context):
         if action == 'signup':
             email = body.get('email')
             password = body.get('password')
+            name = body.get('name')  # New field for user's name
             role = body.get('role', 'Customer')
             security_question = body.get('security_question')
             security_answer = body.get('security_answer')
@@ -68,16 +69,19 @@ def api_gateway_handler(event, context):
                 Password=password,
                 UserAttributes=[
                     {'Name': 'email', 'Value': email},
-                    {'Name': 'custom:custom:role', 'Value': role}
+                    {'Name': 'custom:custom:role', 'Value': role},
+                    {'Name': 'name', 'Value': name}  # Add name as a Cognito attribute
                 ]
             )
 
-            # Hash and store security answer in DynamoDB
+            # Hash and store security answer in DynamoDB with name and role
             if security_question and security_answer:
                 hashed_answer = hashlib.sha256(security_answer.encode()).hexdigest()
                 table.put_item(
                     Item={
                         'userID': email,
+                        'name': name,  # Add user's name
+                        'role': role,  # Add role
                         'securityQuestion': security_question,
                         'hashedAnswer': hashed_answer,
                         'validated': False,

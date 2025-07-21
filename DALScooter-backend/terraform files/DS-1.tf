@@ -99,7 +99,7 @@ resource "aws_lambda_permission" "cognito_invoke" {
 # API Gateway REST API
 resource "aws_api_gateway_rest_api" "dalscooter_api" {
   name        = "DALScooterAPI"
-  description = "API for DALScooter Authentication"
+  description = "API for DALScooter application"
 }
 
 # API Gateway Resource (/auth)
@@ -242,7 +242,8 @@ resource "aws_api_gateway_deployment" "dalscooter_api_deployment" {
     aws_api_gateway_method.options_method,
     aws_api_gateway_integration.options_integration,
     aws_api_gateway_integration.add_vehicle_lambda_integration,
-    aws_api_gateway_integration.add_vehicle_options_integration
+    aws_api_gateway_integration.add_vehicle_options_integration,
+    aws_api_gateway_integration.get_vehicles_integration
   ]
 }
 
@@ -307,6 +308,7 @@ resource "aws_lambda_function" "add_vehicle_lambda" {
   environment {
     variables = {
       VEHICLE_TABLE = aws_dynamodb_table.dalscooter_vehicles.name
+      USER_TABLE = aws_dynamodb_table.dalscooter_users.name
     }
   }
 }
@@ -425,7 +427,7 @@ resource "aws_api_gateway_integration_response" "add_vehicle_options_integration
   response_parameters = {
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
     "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type'"
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
   }
 }
 
