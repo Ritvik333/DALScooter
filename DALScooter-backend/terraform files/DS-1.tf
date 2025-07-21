@@ -27,8 +27,8 @@ resource "aws_lambda_function" "auth_handler_lambda" {
   environment {
     variables = {
       DYNAMODB_TABLE = aws_dynamodb_table.dalscooter_users.name
-      USER_POOL_ID        = "us-east-1_G4J7SVUHQ"
-      USER_POOL_CLIENT_ID = "43tro3q7heuv9ar756la096koq"
+      USER_POOL_ID        = "us-east-1_HEWUlCpbQ"
+      USER_POOL_CLIENT_ID = "1k0g35186fql2ksgc3j3db11k9"
       # USER_POOL_ID and CLIENT_ID intentionally omitted to avoid dependency cycle
     }
   }
@@ -114,7 +114,7 @@ resource "aws_lambda_permission" "cognito_invoke" {
 # API Gateway REST API
 resource "aws_api_gateway_rest_api" "dalscooter_api" {
   name        = "DALScooterAPI"
-  description = "API for DALScooter Authentication"
+  description = "API for DALScooter application"
 }
 
 # API Gateway Resource (/auth)
@@ -274,7 +274,10 @@ resource "aws_api_gateway_deployment" "dalscooter_api_deployment" {
     aws_api_gateway_method.auth_post_method,
     aws_api_gateway_integration.auth_lambda_integration,
     aws_api_gateway_method.options_method,
-    aws_api_gateway_integration.options_integration
+    aws_api_gateway_integration.options_integration,
+    aws_api_gateway_integration.add_vehicle_lambda_integration,
+    aws_api_gateway_integration.add_vehicle_options_integration,
+    aws_api_gateway_integration.get_vehicles_integration
   ]
 }
 
@@ -284,6 +287,190 @@ resource "aws_api_gateway_stage" "dalscooter_api_stage" {
   deployment_id = aws_api_gateway_deployment.dalscooter_api_deployment.id
   stage_name    = "prod"
 }
+
+resource "aws_dynamodb_table" "dalscooter_vehicles" {
+  name         = "DALScooterVehicles"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "vehicleID"
+
+  attribute {
+    name = "vehicleID"
+    type = "S"
+  }
+
+  attribute {
+    name = "type"
+    type = "S"
+  }
+
+  attribute {
+    name = "operatorID"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "TypeIndex"
+    hash_key        = "type"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "OperatorIndex"
+    hash_key        = "operatorID"
+    projection_type = "ALL"
+  }
+}
+
+resource "aws_api_gateway_authorizer" "cognito_auth" {
+  name                   = "DALScooterCognitoAuth"
+  rest_api_id           = aws_api_gateway_rest_api.dalscooter_api.id
+  identity_source       = "method.request.header.Authorization"
+  type                  = "COGNITO_USER_POOLS"
+  provider_arns         = [aws_cognito_user_pool.dalscooter_user_pool.arn]
+}
+
+# Lambda Function to Add Vehicle
+resource "aws_lambda_function" "add_vehicle_lambda" {
+  filename         = "add_vehicle_handler.zip" # Zip your add_vehicle_lambda.py
+  function_name    = "DALScooterAddVehicle"
+  role             = "arn:aws:iam::101784748999:role/LabRole"
+  handler          = "lambda_function.lambda_handler"
+  runtime          = "python3.9"
+  timeout          = 30
+  source_code_hash = filebase64sha256("add_vehicle_handler.zip")
+
+  environment {
+    variables = {
+      VEHICLE_TABLE = aws_dynamodb_table.dalscooter_vehicles.name
+      USER_TABLE = aws_dynamodb_table.dalscooter_users.name
+    }
+  }
+}
+
+# Lambda Permission for API Gateway (Add Vehicle)
+resource "aws_lambda_permission" "api_gateway_invoke_add_vehicle" {
+  statement_id  = "AllowAddVehicleInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.add_vehicle_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.dalscooter_api.execution_arn}/*/*"
+}
+
+# API Gateway Resource for /add-vehicle
+resource "aws_api_gateway_resource" "add_vehicle_resource" {
+  rest_api_id = aws_api_gateway_rest_api.dalscooter_api.id
+  parent_id   = aws_api_gateway_rest_api.dalscooter_api.root_resource_id
+  path_part   = "add-vehicle"
+}
+
+# POST /add-vehicle Method
+resource "aws_api_gateway_method" "add_vehicle_post_method" {
+  rest_api_id   = aws_api_gateway_rest_api.dalscooter_api.id
+  resource_id   = aws_api_gateway_resource.add_vehicle_resource.id
+  http_method   = "POST"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito_auth.id
+
+  request_parameters = {
+    "method.request.header.Authorization" = true
+    "method.request.header.Content-Type"  = true
+  }
+}
+
+# OPTIONS /add-vehicle Method (CORS)
+resource "aws_api_gateway_method" "add_vehicle_options_method" {
+  rest_api_id   = aws_api_gateway_rest_api.dalscooter_api.id
+  resource_id   = aws_api_gateway_resource.add_vehicle_resource.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+# POST Integration
+resource "aws_api_gateway_integration" "add_vehicle_lambda_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.dalscooter_api.id
+  resource_id             = aws_api_gateway_resource.add_vehicle_resource.id
+  http_method             = aws_api_gateway_method.add_vehicle_post_method.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.add_vehicle_lambda.invoke_arn
+
+  depends_on = [aws_lambda_permission.api_gateway_invoke_add_vehicle]
+}
+
+# OPTIONS Integration (Mock for CORS)
+resource "aws_api_gateway_integration" "add_vehicle_options_integration" {
+  rest_api_id = aws_api_gateway_rest_api.dalscooter_api.id
+  resource_id = aws_api_gateway_resource.add_vehicle_resource.id
+  http_method = aws_api_gateway_method.add_vehicle_options_method.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+# POST Method Response
+resource "aws_api_gateway_method_response" "add_vehicle_post_response_200" {
+  rest_api_id = aws_api_gateway_rest_api.dalscooter_api.id
+  resource_id = aws_api_gateway_resource.add_vehicle_resource.id
+  http_method = aws_api_gateway_method.add_vehicle_post_method.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Headers" = true
+  }
+}
+
+# OPTIONS Method Response
+resource "aws_api_gateway_method_response" "add_vehicle_options_response" {
+  rest_api_id = aws_api_gateway_rest_api.dalscooter_api.id
+  resource_id = aws_api_gateway_resource.add_vehicle_resource.id
+  http_method = aws_api_gateway_method.add_vehicle_options_method.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Headers" = true
+  }
+}
+
+# POST Integration Response
+resource "aws_api_gateway_integration_response" "add_vehicle_integration_response_200" {
+  rest_api_id = aws_api_gateway_rest_api.dalscooter_api.id
+  resource_id = aws_api_gateway_resource.add_vehicle_resource.id
+  http_method = aws_api_gateway_method.add_vehicle_post_method.http_method
+  status_code = aws_api_gateway_method_response.add_vehicle_post_response_200.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type'"
+  }
+}
+
+# OPTIONS Integration Response
+resource "aws_api_gateway_integration_response" "add_vehicle_options_integration_response" {
+  rest_api_id = aws_api_gateway_rest_api.dalscooter_api.id
+  resource_id = aws_api_gateway_resource.add_vehicle_resource.id
+  http_method = aws_api_gateway_method.add_vehicle_options_method.http_method
+  status_code = aws_api_gateway_method_response.add_vehicle_options_response.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+  }
+}
+
+# Output
+output "add_vehicle_api_url" {
+  description = "API Gateway endpoint URL for /add-vehicle"
+  value       = "${aws_api_gateway_stage.dalscooter_api_stage.invoke_url}/add-vehicle"
+}
+
 
 # Outputs
 output "user_pool_id" {
