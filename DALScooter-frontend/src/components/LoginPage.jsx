@@ -3,7 +3,7 @@
 import { useState } from "react"
 import LoginForm from "./LoginForm"
 
-const LoginPage = () => {
+const LoginPage = () => { //LoginPage
   const [showLogin, setShowLogin] = useState(false)
 
   return (

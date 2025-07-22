@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext"
 import MultiFactorAuth from "./MultiFactorAuth"
 import toast from "react-hot-toast"
 
-const Login = () => {
+const Login = () => { //Login 
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
