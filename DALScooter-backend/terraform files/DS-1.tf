@@ -18,7 +18,7 @@ resource "aws_dynamodb_table" "dalscooter_users" {
 resource "aws_lambda_function" "auth_handler_lambda" {
   filename         = "auth_handler.zip"
   function_name    = "DALScooterAuthHandler"
-  role             = "arn:aws:iam::959817979665:role/LabRole"
+  role             = "arn:aws:iam::101784748999:role/LabRole"
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.9"
   timeout          = 30
@@ -277,7 +277,15 @@ resource "aws_api_gateway_deployment" "dalscooter_api_deployment" {
     aws_api_gateway_integration.options_integration,
     aws_api_gateway_integration.add_vehicle_lambda_integration,
     aws_api_gateway_integration.add_vehicle_options_integration,
-    aws_api_gateway_integration.get_vehicles_integration
+    aws_api_gateway_integration.get_vehicles_integration,
+    aws_api_gateway_method.book_vehicle_method,
+    aws_api_gateway_integration.book_vehicle_integration,
+    aws_api_gateway_method.book_vehicle_options_method,
+    aws_api_gateway_integration.book_vehicle_options_integration,
+    aws_api_gateway_method.get_bookings_method,
+    aws_api_gateway_integration.get_bookings_integration,
+    aws_api_gateway_method.get_bookings_options_method,
+    aws_api_gateway_integration.get_bookings_options_integration
   ]
 }
 
