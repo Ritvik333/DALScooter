@@ -25,11 +25,11 @@ const LoginForm = ({ onBack }) => { //LoginForm
   const [caesarAnswer, setCaesarAnswer] = useState("")
   const [message, setMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [sessionData, setSessionData] = useState(null)
+  const [sessionData, setSessionData] = useState("")
   const [securityQuestion, setSecurityQuestion] = useState("")
   const [caesarChallenge, setCaesarChallenge] = useState("")
 
-  const apiEndpoint = "https://70qjt3y22a.execute-api.us-east-1.amazonaws.com/prod/auth"
+  const apiEndpoint = "https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/auth"
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -37,13 +37,15 @@ const LoginForm = ({ onBack }) => { //LoginForm
     setMessage("Signing in...")
 
     const requestBody = {
-      action: "login",
+      action: "login",  
       email,
       password,
     }
 
     try {
+      // console.log("responseL:",response);
       const response = await axios.post(apiEndpoint, requestBody)
+      console.log("responseL:",response);
 
       if (response.data.idToken) {
         // Login successful
@@ -53,13 +55,16 @@ const LoginForm = ({ onBack }) => { //LoginForm
           console.log("Login successful:", response.data)
         }, 1500)
       } else if (response.data.session) {
+        console.log("SD:",response.data.session);
         // MFA required
-        setSessionData(response.data)
-        setSecurityQuestion(response.data.security_question || "What is your security question answer?")
+        setSessionData(response.data.session)
+        console.log("setting session data 1: ",sessionData);
+        setSecurityQuestion(response.data.securityQuestion || "What is your security question answer?")
         setMessage("Multi-factor authentication required")
         setStep(2)
       }
     } catch (error) {
+      console.error("Login error:", error.response?.status, error.response?.data)
       setMessage("Login failed. Please check your credentials.")
     } finally {
       setIsLoading(false)
@@ -74,26 +79,30 @@ const LoginForm = ({ onBack }) => { //LoginForm
     const requestBody = {
       action: "respond_to_challenge",
       email,
-      session: sessionData.session,
+      session: sessionData,
       answer: securityAnswer,
     }
 
     try {
+      console.log(requestBody)
       const response = await axios.post(apiEndpoint, requestBody)
-
+      console.log("response 2:",response);
       if (response.data.idToken) {
         // Login successful after security question
         setMessage("Authentication successful! Redirecting...")
         setTimeout(() => {
           console.log("Login successful:", response.data)
         }, 1500)
-      } else if (response.data.caesar_challenge) {
+      } else if (response.data.challenge) {
         // Caesar cipher challenge
-        setCaesarChallenge(response.data.caesar_challenge)
+        setSessionData(response.data.session)
+        console.log("setting session data 2: ",sessionData);
+        setCaesarChallenge(response.data.cipherText)
         setMessage("Additional security challenge required")
         setStep(3)
       }
     } catch (error) {
+      console.error("Login error:", error.response?.status, error.response?.data)
       setMessage("Security verification failed. Please try again.")
     } finally {
       setIsLoading(false)
@@ -104,12 +113,13 @@ const LoginForm = ({ onBack }) => { //LoginForm
     e.preventDefault()
     setIsLoading(true)
     setMessage("Verifying challenge response...")
+    console.log("SD-2:",sessionData);
 
     const requestBody = {
       action: "respond_to_challenge",
       email,
-      session: sessionData.session,
-      caesar_answer: caesarAnswer,
+      session: sessionData,
+      answer: caesarAnswer,
     }
 
     try {
