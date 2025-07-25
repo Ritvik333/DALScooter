@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Bike, Battery, DollarSign, Clock,CheckCircle, AlertCircle } from 'lucide-react';
+import axios from 'axios'
 // import { Auth } from 'aws-amplify';
 
-const Dashboard = () => {
+const Dashboard = ({ role: propRole, onLogout }) => {
   const [showModal, setShowModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -29,7 +30,7 @@ const Dashboard = () => {
 
   // Fetch role from localStorage and vehicles when component mounts
   useEffect(() => {
-    const storedRole = localStorage.getItem('userRole');
+    const storedRole = localStorage.getItem('role');
     if (storedRole) {
       setRole(storedRole);
     }
@@ -60,6 +61,67 @@ const Dashboard = () => {
 
     fetchVehicles();
   }, []);
+
+  const handleLogout = async () => {
+    const accessToken = localStorage.getItem('AccessToken')
+    const email = localStorage.getItem('email')
+    if (role === 'guest' || !accessToken) {
+      // Skip API call for guest users or if no token
+      if (onLogout) {
+        onLogout()
+      } else {
+        localStorage.removeItem('idToken')
+        localStorage.removeItem('AccessToken')
+        localStorage.removeItem('email')
+        localStorage.removeItem('role')
+        window.location.reload()
+      }
+      return
+    }
+
+    try {
+      const response = await fetch('https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors',
+        body: JSON.stringify({
+          action: 'logout',
+          accessToken,
+          email
+        })
+      })
+      console.log("response",response)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('Logout API call successful:', data)
+      if (onLogout) onLogout()
+    } catch (error) {
+    //   console.log(accessToken,email)
+      console.error('Logout error:', {
+        message: error.message,
+        name: error.name,
+        response: error.response ? {
+          status: error.response.status,
+          data: error.response.data
+        } : null
+      })
+      if (onLogout) {
+        onLogout()
+      } else {
+        localStorage.removeItem('idToken')
+        localStorage.removeItem('AccessToken')
+        localStorage.removeItem('email')
+        localStorage.removeItem('role')
+        window.location.reload()
+      }
+    }
+  }
 
   // Fetch existing bookings for a vehicle when the booking modal opens
 //   const fetchBookings = async (vehicleID) => {
@@ -127,7 +189,7 @@ const Dashboard = () => {
     try {
     //   const session = await Auth.currentSession();
     //   const token = session.getIdToken().getJwtToken();
-      const token = "";
+      const token = localStorage.getItem('idToken');
       const response = await fetch('https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/add-vehicle', {
         method: 'POST',
         headers: {
@@ -267,6 +329,13 @@ const Dashboard = () => {
           <li className="font-semibold hover:text-purple-300 cursor-pointer">Dashboard</li>
           <li className="text-gray-400 hover:text-purple-300 cursor-pointer">My Bookings</li>
           <li className="text-gray-400 hover:text-purple-300 cursor-pointer">Settings</li>
+          <li className="text-gray-400 hover:text-purple-300 cursor-pointer"><button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
+                Log Out
+            </button></li>
+
         </ul>
       </aside>
 
@@ -310,7 +379,7 @@ const Dashboard = () => {
                       <p className="text-lg">Brand: {vehicle.franchiseName}</p>
                     </div>
                     <p className="text-lg"><strong>Height Adjustable:</strong> {vehicle.heightAdjustable ? 'Yes' : 'No'}</p>
-                    {(role === 'Customer' || role === 'Guest') && (
+                    {(role === 'customer' || role === 'Guest') && (
                       <button
                         onClick={() => handleBook(vehicle)}
                         className="mt-4 w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-lg transition duration-300"
@@ -325,7 +394,7 @@ const Dashboard = () => {
           )}
 
           {/* Floating Add Button for Franchise Operator */}
-          {role === 'Franchise Operator' && (
+          {role === 'operator' && (
             <button
               onClick={() => setShowModal(true)}
               className="fixed bottom-6 right-6 bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-full shadow-lg transition duration-300 transform hover:scale-110"

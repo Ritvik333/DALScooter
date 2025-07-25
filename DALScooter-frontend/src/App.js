@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState,useEffect } from "react"
 import { BikeIcon as Scooter, ArrowLeft, Sparkles, LogIn, UserPlus } from 'lucide-react'
 import RegistrationForm from "./components/RegistrationForm"
 import LoginForm from "./components/LoginForm"
@@ -12,8 +12,31 @@ const App = () => {
 
   const [showDashboard, setShowDashboard] = useState(false);
 
-  if (showDashboard) {  
-    return <Dashboard role={selectedRole || "guest"} />;
+  useEffect(() => {
+    const idToken = localStorage.getItem('idToken')
+    if (idToken) {
+      const role = localStorage.getItem('role') || 'customer'
+      setSelectedRole(role)
+      setShowDashboard(true)
+      // setShowDashboard(false)
+      // setCurrentView("home")
+    }
+  }, [])
+  if (showDashboard) {
+    return (
+      <Dashboard
+        role={selectedRole || "guest"}
+        onLogout={() => {
+          localStorage.removeItem('idToken')
+          localStorage.removeItem('AccessToken')
+          localStorage.removeItem('email')
+          localStorage.removeItem('role')
+          setShowDashboard(false)
+          setSelectedRole(null)
+          setCurrentView("home")
+        }}
+      />
+    )
   }
 
   // Home screen with options to register or login
@@ -83,12 +106,12 @@ const App = () => {
               Secure authentication powered by AWS Cognito
             </p>
           </div>
-          <button
+          {/* <button
           className="bg-gray-800 text-white px-6 py-3 rounded hover:bg-gray-900"
           onClick={() => setShowDashboard(true)}
         >
           🔓 Bypass Login → Go to Dashboard
-        </button>
+        </button> */}
         </div>
 
         {/* Footer */}
@@ -114,6 +137,10 @@ const App = () => {
           <LoginForm 
             onBack={() => setCurrentView("home")}
             onSwitchToRegister={() => setCurrentView("register")}
+            onLoginSuccess={(role) => {
+              setSelectedRole(role || "customer") // Default to "customer" if no role
+              setShowDashboard(true)
+            }}
           />
         </div>
       </div>
@@ -184,7 +211,6 @@ const App = () => {
       </div>
     )
   }
-
   //
 }
 export default App

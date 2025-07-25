@@ -15,8 +15,9 @@ import {
   Sparkles,
 } from "lucide-react"
 import axios from "axios"
+// import { useNavigate } from "react-router-dom"
 
-const LoginForm = ({ onBack }) => { //LoginForm
+const LoginForm = ({ onBack, onSwitchToRegister, onLoginSuccess }) => { //LoginForm
   const [step, setStep] = useState(1) // Step 1: Login, Step 2: Security Question, Step 3: Caesar Cipher
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -28,6 +29,7 @@ const LoginForm = ({ onBack }) => { //LoginForm
   const [sessionData, setSessionData] = useState("")
   const [securityQuestion, setSecurityQuestion] = useState("")
   const [caesarChallenge, setCaesarChallenge] = useState("")
+  // const navigate = useNavigate(); // Add this line
 
   const apiEndpoint = "https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/auth"
 
@@ -49,16 +51,16 @@ const LoginForm = ({ onBack }) => { //LoginForm
 
       if (response.data.idToken) {
         // Login successful
-        setMessage("Login successful! Redirecting...")
-        setTimeout(() => {
-          // Handle successful login - redirect to dashboard
-          console.log("Login successful:", response.data)
-        }, 1500)
+        localStorage.setItem('idToken', response.data.idToken)
+        localStorage.setItem('AccessToken', response.data.AccessToken)
+        localStorage.setItem('email', email)
+        localStorage.setItem('role',response.data.role)
+        setMessage("Login successful!")
+        console.log("Login successful:", response.data)
+        onLoginSuccess(response.data.role) // Call onLoginSuccess with role
       } else if (response.data.session) {
-        console.log("SD:",response.data.session);
-        // MFA required
+        console.log("SD:", response.data.session)
         setSessionData(response.data.session)
-        console.log("setting session data 1: ",sessionData);
         setSecurityQuestion(response.data.securityQuestion || "What is your security question answer?")
         setMessage("Multi-factor authentication required")
         setStep(2)
@@ -127,12 +129,16 @@ const LoginForm = ({ onBack }) => { //LoginForm
 
       if (response.data.idToken) {
         setMessage("Authentication successful! Redirecting...")
-        setTimeout(() => {
-          console.log("Login successful:", response.data)
-        }, 1500)
-      } else {
-        setMessage("Challenge verification failed. Please try again.")
-      }
+        localStorage.setItem('idToken', response.data.idToken);
+        localStorage.setItem('AccessToken', response.data.AccessToken);
+        localStorage.setItem('email', email);
+        localStorage.setItem('role',response.data.role)
+        setMessage("Authentication successful!")
+        console.log("Login successful:", response.data)
+        onLoginSuccess(response.data.role) // Call onLoginSuccess with role
+        } else {
+          setMessage("Challenge verification failed. Please try again.")
+        }
     } catch (error) {
       setMessage("Challenge verification failed. Please try again.")
     } finally {
