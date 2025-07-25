@@ -1,7 +1,7 @@
 "use client"
 
-import { useState,useEffect } from "react"
-import { BikeIcon as Scooter, ArrowLeft, Sparkles, LogIn, UserPlus } from 'lucide-react'
+import { useState, useEffect } from "react"
+import { BikeIcon as Scooter, ArrowLeft, Sparkles, LogIn, UserPlus, Eye } from 'lucide-react'
 import RegistrationForm from "./components/RegistrationForm"
 import LoginForm from "./components/LoginForm"
 import Dashboard from './components/Dashboard'
@@ -9,7 +9,6 @@ import Dashboard from './components/Dashboard'
 const App = () => {
   const [currentView, setCurrentView] = useState("home") // "home", "register", "login"
   const [selectedRole, setSelectedRole] = useState(null)
-
   const [showDashboard, setShowDashboard] = useState(false);
 
   useEffect(() => {
@@ -99,6 +98,25 @@ const App = () => {
                 </div>
               </div>
             </button>
+
+            {/* Continue as Guest Button */}
+            <button
+              className="w-full group bg-gradient-to-r from-gray-500 to-gray-700 text-white px-8 py-4 rounded-xl hover:from-gray-700 hover:to-black transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center"
+              onClick={() => {
+                // Ensure clean session
+                localStorage.removeItem('idToken');
+                localStorage.removeItem('AccessToken');
+                localStorage.removeItem('email');
+                localStorage.setItem('role', 'Guest');
+                setShowDashboard(true);
+                setSelectedRole('Guest');
+              }}
+            >
+              <div className="flex items-center">
+                <Eye className="w-5 h-5 mr-3" />
+                <span className="text-lg">Continue as Guest</span>
+              </div>
+            </button>
           </div>
 
           <div className="mt-8 text-center">
@@ -106,12 +124,6 @@ const App = () => {
               Secure authentication powered by AWS Cognito
             </p>
           </div>
-          {/* <button
-          className="bg-gray-800 text-white px-6 py-3 rounded hover:bg-gray-900"
-          onClick={() => setShowDashboard(true)}
-        >
-          🔓 Bypass Login → Go to Dashboard
-        </button> */}
         </div>
 
         {/* Footer */}
