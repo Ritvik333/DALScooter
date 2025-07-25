@@ -1,4 +1,4 @@
-    import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlusCircle, Bike, Battery, DollarSign, Clock,CheckCircle, AlertCircle } from 'lucide-react';
 // import { Auth } from 'aws-amplify';
 

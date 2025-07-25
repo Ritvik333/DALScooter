@@ -4,10 +4,17 @@ import { useState } from "react"
 import { BikeIcon as Scooter, ArrowLeft, Sparkles, LogIn, UserPlus } from 'lucide-react'
 import RegistrationForm from "./components/RegistrationForm"
 import LoginForm from "./components/LoginForm"
+import Dashboard from './components/Dashboard'
 
 const App = () => {
   const [currentView, setCurrentView] = useState("home") // "home", "register", "login"
   const [selectedRole, setSelectedRole] = useState(null)
+
+  const [showDashboard, setShowDashboard] = useState(false);
+
+  if (showDashboard) {  
+    return <Dashboard role={selectedRole || "guest"} />;
+  }
 
   // Home screen with options to register or login
   if (currentView === "home") {
@@ -76,6 +83,12 @@ const App = () => {
               Secure authentication powered by AWS Cognito
             </p>
           </div>
+          <button
+          className="bg-gray-800 text-white px-6 py-3 rounded hover:bg-gray-900"
+          onClick={() => setShowDashboard(true)}
+        >
+          🔓 Bypass Login → Go to Dashboard
+        </button>
         </div>
 
         {/* Footer */}
