@@ -1,17 +1,6 @@
-# DS-4 notification.tf - Notification Module Infrastructure
-
 # Reference LabRole dynamically using data source
 data "aws_iam_role" "lab_role_notification" {
   name = "LabRole"
-}
-
-# Reference existing Lambda functions for environment variable updates
-data "aws_lambda_function" "auth_handler" {
-  function_name = "DALScooterAuthHandler"
-}
-
-data "aws_lambda_function" "book_vehicle" {
-  function_name = "DALScooterBookVehicle"
 }
 
 # -----------------------------------------------------
@@ -166,100 +155,6 @@ resource "aws_lambda_event_source_mapping" "sqs_to_booking_processor" {
 }
 
 # -----------------------------------------------------
-# Lambda Function Updates (automated)
-# -----------------------------------------------------
-
-# Update auth_handler Lambda configuration
-resource "aws_lambda_function" "auth_handler_updated" {
-  function_name    = data.aws_lambda_function.auth_handler.function_name
-  role             = data.aws_lambda_function.auth_handler.role
-  handler          = data.aws_lambda_function.auth_handler.handler
-  runtime          = data.aws_lambda_function.auth_handler.runtime
-  
-  # Use the existing Lambda's zip file
-  filename         = "${path.module}/auth_handler_temp.zip"
-  source_code_hash = data.aws_lambda_function.auth_handler.source_code_hash
-  
-  # Add the new environment variable while preserving existing ones
-  environment {
-    variables = merge(
-      data.aws_lambda_function.auth_handler.environment != null ? 
-        data.aws_lambda_function.auth_handler.environment[0].variables : {},
-      {
-        NOTIFICATION_LAMBDA_ARN = aws_lambda_function.notification_handler.arn
-      }
-    )
-  }
-  
-  # Copy existing tags
-  dynamic "tags" {
-    for_each = data.aws_lambda_function.auth_handler.tags != null ? data.aws_lambda_function.auth_handler.tags : {}
-    content {
-      key   = tags.key
-      value = tags.value
-    }
-  }
-  
-  # Create a placeholder zip file for Terraform to use
-  provisioner "local-exec" {
-    command = "zip -j ${path.module}/auth_handler_temp.zip ${path.module}/placeholder.txt"
-  }
-  
-  # Skip the placeholder file deletion check
-  lifecycle {
-    ignore_changes = [filename, source_code_hash]
-  }
-}
-
-# Update book_vehicle Lambda configuration
-resource "aws_lambda_function" "book_vehicle_updated" {
-  function_name    = data.aws_lambda_function.book_vehicle.function_name
-  role             = data.aws_lambda_function.book_vehicle.role
-  handler          = data.aws_lambda_function.book_vehicle.handler
-  runtime          = data.aws_lambda_function.book_vehicle.runtime
-  
-  # Use the existing Lambda's zip file
-  filename         = "${path.module}/book_vehicle_temp.zip"
-  source_code_hash = data.aws_lambda_function.book_vehicle.source_code_hash
-  
-  # Add the new environment variable while preserving existing ones
-  environment {
-    variables = merge(
-      data.aws_lambda_function.book_vehicle.environment != null ? 
-        data.aws_lambda_function.book_vehicle.environment[0].variables : {},
-      {
-        BOOKING_QUEUE_URL = aws_sqs_queue.booking_request_queue.url
-      }
-    )
-  }
-  
-  # Copy existing tags
-  dynamic "tags" {
-    for_each = data.aws_lambda_function.book_vehicle.tags != null ? data.aws_lambda_function.book_vehicle.tags : {}
-    content {
-      key   = tags.key
-      value = tags.value
-    }
-  }
-  
-  # Create a placeholder zip file for Terraform to use
-  provisioner "local-exec" {
-    command = "zip -j ${path.module}/book_vehicle_temp.zip ${path.module}/placeholder.txt"
-  }
-  
-  # Skip the placeholder file deletion check
-  lifecycle {
-    ignore_changes = [filename, source_code_hash]
-  }
-}
-
-# Create placeholder.txt for zip files
-resource "local_file" "placeholder" {
-  content  = "This is a placeholder file for Terraform Lambda updates."
-  filename = "${path.module}/placeholder.txt"
-}
-
-# -----------------------------------------------------
 # Lambda Permissions
 # -----------------------------------------------------
 resource "aws_lambda_permission" "notification_handler_permission" {
@@ -308,4 +203,19 @@ output "notification_handler_arn" {
 output "booking_processor_arn" {
   description = "ARN of the booking processor Lambda function"
   value       = aws_lambda_function.booking_processor.arn
+}
+
+# Important environment variables that need to be manually added
+output "auth_handler_env_vars" {
+  description = "Environment variables that need to be MANUALLY added to auth_handler Lambda"
+  value = {
+    NOTIFICATION_LAMBDA_ARN = aws_lambda_function.notification_handler.arn
+  }
+}
+
+output "book_vehicle_env_vars" {
+  description = "Environment variables that need to be MANUALLY added to book_vehicle Lambda"
+  value = {
+    BOOKING_QUEUE_URL = aws_sqs_queue.booking_request_queue.url
+  }
 }
