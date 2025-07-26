@@ -5,11 +5,20 @@ import hashlib
 import random
 import string
 from botocore.exceptions import ClientError
+import logging
+from datetime import datetime
 
 # Initialize AWS Cognito and DynamoDB clients
 cognito = boto3.client('cognito-idp')
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
+
+# Set up logging
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# Initialize Lambda client for notification service
+lambda_client = boto3.client('lambda')
 
 def lambda_handler(event, context):
     # Handle Cognito Lambda triggers
@@ -95,6 +104,15 @@ def api_gateway_handler(event, context):
                         'cipherValidated': False
                     }
                 )
+            
+            # Send registration notification
+            send_notification(
+                'registration',
+                email,
+                'DALScooter Registration Successful',
+                f'Welcome to DALScooter! Your registration was successful.',
+                {'name': name, 'role': role}
+            )
 
             return {
                 'statusCode': 200,
@@ -127,6 +145,14 @@ def api_gateway_handler(event, context):
             if 'AuthenticationResult' in response:
                 id_token = response['AuthenticationResult']['IdToken']
                 access_token = response['AuthenticationResult']['AccessToken']
+                # Send login notification
+                send_notification(
+                    'login',
+                    email,
+                    'DALScooter Login Notification',
+                    'You have successfully logged in to your DALScooter account.',
+                    {'timestamp': datetime.now().isoformat()}
+                )
                 return {
                     'statusCode': 200,
                     'body': json.dumps({'message': 'Login successful', 'idToken': id_token, 'AccessToken':access_token})
@@ -339,3 +365,35 @@ def verify_auth_challenge_response(event):
         else:
             event['response']['answerCorrect'] = False
     return event
+
+def send_notification(notification_type, email, subject, message, additional_data=None):
+    """Send a notification using the notification handler Lambda"""
+    
+    if additional_data is None:
+        additional_data = {}
+    
+    notification_event = {
+        'notificationType': notification_type,
+        'email': email,
+        'subject': subject,
+        'message': message,
+        'additionalData': additional_data
+    }
+    
+    try:
+        notification_lambda_arn = os.environ.get('NOTIFICATION_LAMBDA_ARN')
+        if not notification_lambda_arn:
+            logger.warning("NOTIFICATION_LAMBDA_ARN not configured, skipping notification")
+            return
+            
+        # Invoke the notification handler Lambda
+        response = lambda_client.invoke(
+            FunctionName=notification_lambda_arn,
+            InvocationType='Event',  # Asynchronous invocation
+            Payload=json.dumps(notification_event)
+        )
+        logger.info(f"Notification Lambda invoked. Status: {response['StatusCode']}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send notification: {str(e)}")
+
