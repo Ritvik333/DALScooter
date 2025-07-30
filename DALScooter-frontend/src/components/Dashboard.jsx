@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, Bike, Battery, DollarSign, Clock,CheckCircle, AlertCircle } from 'lucide-react';
-import axios from 'axios'
-// import { Auth } from 'aws-amplify';
+import { PlusCircle, Bike, Battery, DollarSign, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import MyBookings from './MyBookings';
+import axios from 'axios';
 
 const Dashboard = ({ role: propRole, onLogout }) => {
   const [showModal, setShowModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-//   const [existingBookings, setExistingBookings] = useState([]);
-//   const [bookingLoading, setBookingLoading] = useState(false);
   const [formData, setFormData] = useState({
     type: 'ebike',
     accessCode: '',
@@ -22,13 +20,14 @@ const Dashboard = ({ role: propRole, onLogout }) => {
     endTime: ''
   });
   const [bookingMessage, setBookingMessage] = useState('');
+  const [bookingID, setBookingID] = useState('');
   const [isError, setIsError] = useState(false);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [role, setRole] = useState('Guest');
+  const [showMyBookings, setShowMyBookings] = useState(false);
 
-  // Fetch role from localStorage and vehicles when component mounts
   useEffect(() => {
     const storedRole = localStorage.getItem('role');
     if (storedRole) {
@@ -63,20 +62,19 @@ const Dashboard = ({ role: propRole, onLogout }) => {
   }, []);
 
   const handleLogout = async () => {
-    const accessToken = localStorage.getItem('AccessToken')
-    const email = localStorage.getItem('email')
+    const accessToken = localStorage.getItem('AccessToken');
+    const email = localStorage.getItem('email');
     if (role === 'guest' || !accessToken) {
-      // Skip API call for guest users or if no token
       if (onLogout) {
-        onLogout()
+        onLogout();
       } else {
-        localStorage.removeItem('idToken')
-        localStorage.removeItem('AccessToken')
-        localStorage.removeItem('email')
-        localStorage.removeItem('role')
-        window.location.reload()
+        localStorage.removeItem('idToken');
+        localStorage.removeItem('AccessToken');
+        localStorage.removeItem('email');
+        localStorage.removeItem('role');
+        window.location.reload();
       }
-      return
+      return;
     }
 
     try {
@@ -91,18 +89,16 @@ const Dashboard = ({ role: propRole, onLogout }) => {
           accessToken,
           email
         })
-      })
-      console.log("response",response)
+      });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json()
-      console.log('Logout API call successful:', data)
-      if (onLogout) onLogout()
+      const data = await response.json();
+      console.log('Logout API call successful:', data);
+      if (onLogout) onLogout();
     } catch (error) {
-    //   console.log(accessToken,email)
       console.error('Logout error:', {
         message: error.message,
         name: error.name,
@@ -110,47 +106,18 @@ const Dashboard = ({ role: propRole, onLogout }) => {
           status: error.response.status,
           data: error.response.data
         } : null
-      })
+      });
       if (onLogout) {
-        onLogout()
+        onLogout();
       } else {
-        localStorage.removeItem('idToken')
-        localStorage.removeItem('AccessToken')
-        localStorage.removeItem('email')
-        localStorage.removeItem('role')
-        window.location.reload()
+        localStorage.removeItem('idToken');
+        localStorage.removeItem('AccessToken');
+        localStorage.removeItem('email');
+        localStorage.removeItem('role');
+        window.location.reload();
       }
     }
-  }
-
-  // Fetch existing bookings for a vehicle when the booking modal opens
-//   const fetchBookings = async (vehicleID) => {
-//     try {
-//       setBookingLoading(true);
-//       const response = await fetch(
-//         `https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/get-bookings?vehicleID=${vehicleID}`,
-//         {
-//           method: 'GET',
-//           headers: {
-//             'Content-Type': 'application/json'
-//           },
-//           mode: 'cors'
-//         }
-//       );
-
-//       if (!response.ok) {
-//         throw new Error(`Failed to fetch bookings: ${response.statusText}`);
-//       }
-
-//       const data = await response.json();
-//       setExistingBookings(data);
-//     } catch (err) {
-//       console.error('Error fetching bookings:', err);
-//       setExistingBookings([]);
-//     } finally {
-//       setBookingLoading(false);
-//     }
-//   };
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -177,7 +144,7 @@ const Dashboard = ({ role: propRole, onLogout }) => {
 
   const calculateTotalCost = () => {
     if (!selectedVehicle || !bookingFormData.startTime || !bookingFormData.endTime) return 0;
-    const today = new Date().toISOString().slice(0, 10); // e.g., "2025-07-22"
+    const today = new Date().toISOString().slice(0, 10);
     const start = new Date(`${today}T${bookingFormData.startTime}`);
     const end = new Date(`${today}T${bookingFormData.endTime}`);
     const hours = (end - start) / (1000 * 60 * 60);
@@ -187,8 +154,6 @@ const Dashboard = ({ role: propRole, onLogout }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-    //   const session = await Auth.currentSession();
-    //   const token = session.getIdToken().getJwtToken();
       const token = localStorage.getItem('idToken');
       const response = await fetch('https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/add-vehicle', {
         method: 'POST',
@@ -243,7 +208,6 @@ const Dashboard = ({ role: propRole, onLogout }) => {
         endTime: ''
       });
       setShowBookingModal(true);
-    //   fetchBookings(vehicle.vehicleID);
     }
   };
 
@@ -261,31 +225,26 @@ const Dashboard = ({ role: propRole, onLogout }) => {
     e.preventDefault();
 
     const now = new Date();
-    const today = now.toISOString().slice(0, 10); // e.g., "2025-07-22"
+    const today = now.toISOString().slice(0, 10);
     const start = new Date(`${today}T${bookingFormData.startTime}`);
     const end = new Date(`${today}T${bookingFormData.endTime}`);
 
     if (start < now) {
       alert('Start time must be later than the current time.');
       return;
-    } 
+    }
     if (end <= start) {
       alert('End time must be after the start time.');
       return;
     }
 
     try {
-    //   const session = await Auth.currentSession();
-    //   const token = session.getIdToken().getJwtToken();
-    //   const token = "";
-    //   const email = userInfo.attributes.email;
       const email = localStorage.getItem('email');
 
       const response = await fetch('https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/book-vehicle', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        //   'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           vehicleID: selectedVehicle.vehicleID,
@@ -294,7 +253,6 @@ const Dashboard = ({ role: propRole, onLogout }) => {
           email
         }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         setBookingMessage(errorData.message || `Failed to book vehicle: ${response.statusText}`);
@@ -303,6 +261,7 @@ const Dashboard = ({ role: propRole, onLogout }) => {
       }
 
       const result = await response.json();
+      setBookingID(result.bookingID || '');
       setBookingMessage('Booking successful!');
       setIsError(false);
       setTimeout(() => {
@@ -312,7 +271,7 @@ const Dashboard = ({ role: propRole, onLogout }) => {
           endTime: ''
         });
         setBookingMessage('');
-      }, 2000); // Close modal after 2 seconds
+      }, 2000);
     } catch (error) {
       console.error('Error booking vehicle:', error);
       setBookingMessage(error.message || 'Internal server error');
@@ -327,15 +286,23 @@ const Dashboard = ({ role: propRole, onLogout }) => {
         <h2 className="text-2xl font-bold mb-8">Customer Panel</h2>
         <ul className="space-y-4">
           <li className="font-semibold hover:text-purple-300 cursor-pointer">Dashboard</li>
-          <li className="text-gray-400 hover:text-purple-300 cursor-pointer">My Bookings</li>
-          <li className="text-gray-400 hover:text-purple-300 cursor-pointer">Settings</li>
-          <li className="text-gray-400 hover:text-purple-300 cursor-pointer"><button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          {role === 'customer' && (
+            <li
+              className="text-gray-400 hover:text-purple-300 cursor-pointer"
+              onClick={() => setShowMyBookings(!showMyBookings)}
             >
-                Log Out
-            </button></li>
-
+              My Bookings
+            </li>
+          )}
+          <li className="text-gray-400 hover:text-purple-300 cursor-pointer">Settings</li>
+          <li className="text-gray-400 hover:text-purple-300 cursor-pointer">
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Log Out
+            </button>
+          </li>
         </ul>
       </aside>
 
@@ -346,8 +313,10 @@ const Dashboard = ({ role: propRole, onLogout }) => {
           <h1 className="text-3xl font-bold">Dashboard ({role})</h1>
         </header>
 
-        {/* Vehicle Catalog */}
+        {/* Main Content Area */}
         <main className="flex-1 p-6 relative">
+          {role === 'customer' && showMyBookings && <MyBookings email={localStorage.getItem('email')} />}
+          {/* Vehicle Catalog */}
           <h2 className="text-2xl font-semibold mb-6 text-gray-800">Vehicle Catalog</h2>
           {loading ? (
             <p className="text-gray-600 text-xl">Loading vehicles...</p>
@@ -386,6 +355,16 @@ const Dashboard = ({ role: propRole, onLogout }) => {
                       >
                         Book
                       </button>
+                    )}
+                    {vehicle.feedbacks && vehicle.feedbacks.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-lg font-medium text-white">Reviews:</h4>
+                        {vehicle.feedbacks.map((feedback, index) => (
+                          <p key={index} className="text-sm text-white mt-1">
+                            {feedback.message} (Posted: {new Date(feedback.timestamp).toLocaleString()})
+                          </p>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -500,91 +479,96 @@ const Dashboard = ({ role: propRole, onLogout }) => {
 
           {/* Booking Modal */}
           {showBookingModal && selectedVehicle && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-xl p-8 w-full max-w-md shadow-2xl">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-800">Book Vehicle</h2>
-            <form onSubmit={handleBookingSubmit} className="space-y-6">
-              <div>
-                <label className="block text-lg font-medium mb-2 text-gray-700">Vehicle Type</label>
-                <input
-                  type="text"
-                  value={selectedVehicle.type.toUpperCase()}
-                  readOnly
-                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-                />
-              </div>
-              <div>
-                <label className="block text-lg font-medium mb-2 text-gray-700 flex items-center">
-                  <Clock className="h-5 w-5 mr-2 text-purple-500" />
-                  Start Time
-                </label>
-                <input
-                  type="time"
-                  name="startTime"
-                  value={bookingFormData.startTime}
-                  onChange={handleBookingChange}
-                  min={new Date().toTimeString().slice(0, 5)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-lg font-medium mb-2 text-gray-700 flex items-center">
-                  <Clock className="h-5 w-5 mr-2 text-purple-500" />
-                  End Time
-                </label>
-                <input
-                  type="time"
-                  name="endTime"
-                  value={bookingFormData.endTime}
-                  onChange={handleBookingChange}
-                  min={bookingFormData.startTime || new Date().toTimeString().slice(0, 5)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-lg font-medium mb-2 text-gray-700">Total Cost</label>
-                <p className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100">
-                  ${calculateTotalCost()}
-                </p>
-              </div>
-              {bookingMessage && (
-                <div
-                    className={`mt-6 p-4 rounded-xl text-center text-sm font-medium animate-fade-in ${getMessageStyle(bookingMessage)}`}
-                >
-                    <div className="flex items-center justify-center">
-                    {bookingMessage.includes('successful') ? (
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                    ) : (
-                        <AlertCircle className="w-4 h-4 mr-2" />
-                    )}
-                    {bookingMessage}
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+              <div className="bg-white rounded-xl p-8 w-full max-w-md shadow-2xl">
+                <h2 className="text-2xl font-semibold mb-6 text-gray-800">Book Vehicle</h2>
+                <form onSubmit={handleBookingSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-lg font-medium mb-2 text-gray-700">Vehicle Type</label>
+                    <input
+                      type="text"
+                      value={selectedVehicle.type.toUpperCase()}
+                      readOnly
+                      className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-lg font-medium mb-2 text-gray-700 flex items-center">
+                      <Clock className="h-5 w-5 mr-2 text-purple-500" />
+                      Start Time
+                    </label>
+                    <input
+                      type="time"
+                      name="startTime"
+                      value={bookingFormData.startTime}
+                      onChange={handleBookingChange}
+                      min={new Date().toTimeString().slice(0, 5)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-lg font-medium mb-2 text-gray-700 flex items-center">
+                      <Clock className="h-5 w-5 mr-2 text-purple-500" />
+                      End Time
+                    </label>
+                    <input
+                      type="time"
+                      name="endTime"
+                      value={bookingFormData.endTime}
+                      onChange={handleBookingChange}
+                      min={bookingFormData.startTime || new Date().toTimeString().slice(0, 5)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-lg font-medium mb-2 text-gray-700">Total Cost</label>
+                    <p className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100">
+                      ${calculateTotalCost()}
+                    </p>
+                  </div>
+                  {bookingMessage && (
+                    <div
+                      className={`mt-6 p-4 rounded-xl text-center text-sm font-medium animate-fade-in ${getMessageStyle(bookingMessage)}`}
+                    >
+                      <div className="flex items-center justify-center">
+                        {bookingMessage.includes('successful') ? (
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 mr-2" />
+                        )}
+                        <span>
+                          {bookingMessage}
+                          {bookingMessage.includes('successful') && bookingID && (
+                            <span className="ml-2 font-bold">Booking ID: {bookingID}</span>
+                          )}
+                        </span>
+                      </div>
                     </div>
-                </div>
-                )}
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowBookingModal(false);
-                    setBookingMessage('');
-                  }}
-                  className="px-6 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition duration-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition duration-300"
-                >
-                  Confirm Booking
-                </button>
+                  )}
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowBookingModal(false);
+                        setBookingMessage('');
+                      }}
+                      className="px-6 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition duration-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition duration-300"
+                    >
+                      Confirm Booking
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </div>
+          )}
         </main>
       </div>
     </div>
