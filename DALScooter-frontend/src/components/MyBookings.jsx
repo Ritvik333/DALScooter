@@ -18,7 +18,7 @@ const MyBookings = ({ email }) => {
       try {
         setLoading(true);
         const response = await fetch(
-          `https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/get-bookings?email=${encodeURIComponent(email)}`,
+          `https://70qjt3y22a.execute-api.us-east-1.amazonaws.com/prod/get-bookings?email=${encodeURIComponent(email)}`,
           {
             method: 'GET',
             headers: {
@@ -64,7 +64,7 @@ const MyBookings = ({ email }) => {
     const contactEmail = localStorage.getItem('email') || 'ritvikb01021909@gmail.com';
 
     try {
-      const response = await fetch('https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/report-concern', {
+      const response = await fetch('https://70qjt3y22a.execute-api.us-east-1.amazonaws.com/prod/report-concern', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ const MyBookings = ({ email }) => {
     const contactEmail = localStorage.getItem('email') || 'ritvikb01021909@gmail.com';
 
     try {
-      const response = await fetch('https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/submit-feedback', {
+      const response = await fetch('https://70qjt3y22a.execute-api.us-east-1.amazonaws.com/prod/submit-feedback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

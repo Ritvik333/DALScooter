@@ -32,7 +32,7 @@ resource "aws_lambda_function" "book_vehicle" {
   function_name = "DALScooterBookVehicle"
   handler       = "lambda_function.handler"
   runtime       = "python3.12"
-  role          = "arn:aws:iam::101784748999:role/LabRole"
+  role          = "arn:aws:iam::959817979665:role/LabRole"
   filename      = "book_vehicle_handler.zip"
   timeout       = 10
 
@@ -48,7 +48,7 @@ resource "aws_lambda_function" "get_bookings" {
   function_name = "DALScooterGetBookings"
   handler       = "lambda_function.handler"
   runtime       = "python3.12"
-  role          = "arn:aws:iam::101784748999:role/LabRole"
+  role          = "arn:aws:iam::959817979665:role/LabRole"
   filename      = "book_vehicle_handler.zip"
   timeout       = 10
 

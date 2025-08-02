@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "dal-scooter",
+  "private_key_id": "c099556456d0a8e81f2bbb68b8f0a4ff556d96a8",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCWmpzTRUNDoxm0\nZxJZhSeNdw98x7DO7JNNWiszuV3fhOiG9KMo98H56wk7EPxx8xsUfwf+Tor2Gieu\no2GC2kACmWJ2UCA/XevB98R7Ntk2vg/doppDXxKhRH9XdMDB/CEAQGc3grlOG23u\nlnFQIMWavxZ+7JO8a5FpaF2A8cqr2mo4Z1IwjS5Jj6T/Jt0gR41099ItV1APvYBH\n3MIv6lHgRjFadys+epY2ez1At8IR00uqe/f8E79FHVN8feO708pgX77bq5g0lWoP\nUi86PFR2BKMupOcZClxp+nqJtZjfBQ3rU2eoN1BQEX2zpBodrMh4ni/XwszJkEE5\nOUo8AN0pAgMBAAECggEAAdgmYVhON32U7Wvmt7XE/dCZCLTprNBiXxaNLrlk1X2A\nmyh9+AeNYVS4HKL7sx81nsW4e2w1pke8jSu0ixWbpjx/zhrzQ3tlt/l4t0PnxenE\nHXl7N1B/1KhCAU2YJQ1ZT8dkzDNRDCG+B1I3Kd1Li4vZXW1jGMdeH5hBhDhR0aga\ns2AJmFUiEmQMTkVY7+1laLvT+GIln/7DqPwhdb57NKtJ8NXscIbRze9bMf+xSHEV\ncKs73XMHY7i2zeWwVM+RZ9/jd8TvQHN/KE4jT9uV93JAQCP9RCu+1FPj69JxqW1d\nmFDdx8N476nwpe/s0u+EMwIzi/85es+6L8XCdj6tIQKBgQDH3VfDUe2QudtO4xWD\nHUpvmco9Wn+oJ47t4npXATxEAxfeDvyi8A3ONgFaUBZkyNr4bdLPwX+PX1ay0FCX\n8qUKxj/1g9s1YQw5qZTNH1HmRVqyZXip1JjgruNUuX+KiZ7l+I0uXOjEOiYmGYjk\nkEAowoZKqJtLG2vVMdV3f/lLsQKBgQDA51Tj8XMfgeW2yekl7pMcfFd8x79U7e6f\nPB40ClzW0f3+Mkv0bS0RVkEfFeEYWD5MCF+65YcHH1fv0kT8hZ6jSQMMum716G3N\ngApS7cmbIMdh6/826qZF1AGeGoVg2uEV15FggztmAUdl/qovFaYaDg3vszpHsitw\noJ53KX+e+QKBgQCH/vLi8vKF0hGKYjaXGu01dx4IFXZbw18cO0knvq11Ue2Bqgz6\nCgI62MCe5XP3bDyjYodZ2r6jninuTpUob3EiHbgTpX8ZmUmqStv3n2IpH/QRA77R\nQNotuJLzaa2BZRd8QF5At/Oi4jZnImTlscoWchbS4luZBbWgQeKRB8FoYQKBgHld\nEXuXnOZlwzCNN7I1tzhkwmYvBaFZUJe+KwJywpYk57fVzROq3H/b1HzKNyQp4IfV\nfOUJIzrH7XtkvyJgrr3sYY7QfJ8Z7Hst41Dpab2/kbF52MekOZgVGi9uYBvfmV00\nkrI13lj+1PzGjCuzYx1hWkNEb5ZL8iiZ5RjzcueBAoGAJ84Z7M3kR1YeoIhF+j1d\n0hnLHQXYWIBlg2IqknepqcSztPecqnN2OBPUWmxGd1rIxdut7RNzjHfrVz8ZHLpL\n2CtEiI8XmxOJS7vfrFzIusJUDNEfUbOoIBFqGRUnljazC4EFi6d1YCEKuFT+XSE/\naitlKb5XRKkxsxGiLohCHvY=\n-----END PRIVATE KEY-----\n",
+  "client_email": "dal-scooter@dal-scooter.iam.gserviceaccount.com",
+  "client_id": "103973886212514948111",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/dal-scooter%40dal-scooter.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

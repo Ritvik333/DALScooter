@@ -10,7 +10,7 @@ resource "aws_lambda_function" "submit_feedback" {
   function_name = "DALScooter-SubmitFeedback"
   filename      = data.archive_file.submit_feedback_zip.output_path
   source_code_hash = data.archive_file.submit_feedback_zip.output_base64sha256
-  role          = "arn:aws:iam::101784748999:role/LabRole"
+  role          = "arn:aws:iam::959817979665:role/LabRole"
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.9"
   timeout       = 30

@@ -18,7 +18,7 @@ resource "aws_dynamodb_table" "dalscooter_users" {
 resource "aws_lambda_function" "auth_handler_lambda" {
   filename         = "auth_handler.zip"
   function_name    = "DALScooterAuthHandler"
-  role             = "arn:aws:iam::101784748999:role/LabRole"
+  role             = "arn:aws:iam::959817979665:role/LabRole"
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.9"
   timeout          = 30
@@ -27,8 +27,8 @@ resource "aws_lambda_function" "auth_handler_lambda" {
   environment {
     variables = {
       DYNAMODB_TABLE = aws_dynamodb_table.dalscooter_users.name
-      USER_POOL_ID        = "us-east-1_HEWUlCpbQ"
-      USER_POOL_CLIENT_ID = "1k0g35186fql2ksgc3j3db11k9"
+      USER_POOL_ID        = "us-east-1_EcBEpen7r"
+      USER_POOL_CLIENT_ID = "5irkf1ctkm14ph5t7p9scbclhf"
       # USER_POOL_ID and CLIENT_ID intentionally omitted to avoid dependency cycle
     }
   }
@@ -341,7 +341,7 @@ resource "aws_api_gateway_authorizer" "cognito_auth" {
 resource "aws_lambda_function" "add_vehicle_lambda" {
   filename         = "add_vehicle_handler.zip" # Zip your add_vehicle_lambda.py
   function_name    = "DALScooterAddVehicle"
-  role             = "arn:aws:iam::101784748999:role/LabRole"
+  role             = "arn:aws:iam::959817979665:role/LabRole"
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.9"
   timeout          = 30

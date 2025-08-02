@@ -31,7 +31,7 @@ const LoginForm = ({ onBack, onSwitchToRegister, onLoginSuccess }) => { //LoginF
   const [caesarChallenge, setCaesarChallenge] = useState("")
   // const navigate = useNavigate(); // Add this line
 
-  const apiEndpoint = "https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/auth"
+  const apiEndpoint = "https://70qjt3y22a.execute-api.us-east-1.amazonaws.com/prod/auth"
 
   const handleLogin = async (e) => {
     e.preventDefault()

@@ -20,8 +20,11 @@ def handler(event, context):
         return {
             "statusCode": 200,
             "headers": {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
+                # "Content-Type": "application/json",
+                # "Access-Control-Allow-Origin": "*"
+                'Access-Control-Allow-Origin': '*',  # Adjust for production
+                'Access-Control-Allow-Methods': 'GET,OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type,Authorization'
             },
             "body": json.dumps(items)
         }
@@ -29,7 +32,10 @@ def handler(event, context):
         return {
             "statusCode": 500,
             "headers": {
-                "Access-Control-Allow-Origin": "*"
+                # "Access-Control-Allow-Origin": "*"
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET,OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type,Authorization'
             },
             "body": json.dumps({"error": str(e)})
         }

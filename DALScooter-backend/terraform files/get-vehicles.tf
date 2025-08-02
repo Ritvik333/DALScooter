@@ -2,7 +2,7 @@ resource "aws_lambda_function" "get_vehicles" {
   function_name = "DALScooterGetVehicles"
   handler       = "lambda_function.handler"
   runtime       = "python3.12"
-  role          = "arn:aws:iam::101784748999:role/LabRole"
+  role          = "arn:aws:iam::959817979665:role/LabRole"
   filename      = "get_vehicles_handler.zip"
   timeout       = 10
 
@@ -12,6 +12,7 @@ resource "aws_lambda_function" "get_vehicles" {
     }
   }
 }
+
 
 resource "aws_api_gateway_resource" "get_vehicles_resource" {
   rest_api_id = aws_api_gateway_rest_api.dalscooter_api.id
