@@ -5,6 +5,7 @@ import hashlib
 import random
 import string
 from botocore.exceptions import ClientError
+import datetime
 
 # Initialize AWS Cognito, DynamoDB, and SNS clients
 cognito = boto3.client('cognito-idp')
@@ -60,26 +61,19 @@ def api_gateway_handler(event, context):
                     Username=email,
                     ConfirmationCode=otp
                 )
-                # Manually create SNS topic after OTP verification
-                topic_name = f"DALScooter-Notifications-{email.replace('@', '-').replace('.', '-')}"
-                response = sns_client.create_topic(Name=topic_name)
-                topic_arn = response['TopicArn']
-                # logger.info(f"Created SNS topic: {topic_arn} for email: {email}")
-                
-                # Store topic ARN in DynamoDB
-                table.update_item(
-                    Key={'userID': email},
-                    UpdateExpression='SET topicArn = :arn',
-                    ExpressionAttributeValues={':arn': topic_arn}
-                )
-
-                sns_client.subscribe(
-                    TopicArn=topic_arn,
-                    Protocol='email',
-                    Endpoint=email
-                )
                 # logger.info(f"Subscribed email {email} to topic {topic_arn}")
-                
+                user_data = table.get_item(Key={'userID': email}).get('Item', {})
+                topic_arn = user_data.get('topicArn')
+                if not topic_arn:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            "Access-Control-Allow-Origin": "*",
+                            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                            "Access-Control-Allow-Methods": "POST, OPTIONS"
+                        },
+                        'body': json.dumps({'message': 'Topic ARN not found. Subscription may not be set up.'})
+                    }
                 # Send a welcome email via SNS
                 welcome_message = f"Welcome to DALScooter, {name}! Your account is now active. This is a test email from your notification topic."
                 sns_client.publish(
@@ -125,6 +119,24 @@ def api_gateway_handler(event, context):
                         'cipherValidated': False
                     }
                 )
+                # Manually create SNS topic after OTP verification
+                topic_name = f"DALScooter-Notifications-{email.replace('@', '-').replace('.', '-')}"
+                response = sns_client.create_topic(Name=topic_name)
+                topic_arn = response['TopicArn']
+                # logger.info(f"Created SNS topic: {topic_arn} for email: {email}")
+                
+                # Store topic ARN in DynamoDB
+                table.update_item(
+                    Key={'userID': email},
+                    UpdateExpression='SET topicArn = :arn',
+                    ExpressionAttributeValues={':arn': topic_arn}
+                )
+
+                sns_client.subscribe(
+                    TopicArn=topic_arn,
+                    Protocol='email',
+                    Endpoint=email
+                )
 
             return {
                 'statusCode': 200,
@@ -133,7 +145,7 @@ def api_gateway_handler(event, context):
                     "Access-Control-Allow-Headers": "Content-Type, Authorization",
                     "Access-Control-Allow-Methods": "POST, OPTIONS"
                 },
-                'body': json.dumps({'message': 'Registration successful. OTP sent to email. Provide OTP to verify.'})
+                'body': json.dumps({'message': 'Registration successful. OTP sent to email. Provide OTP to verify and confirm subscription to SNS topic!'})
             }
 
         elif action == 'login':
@@ -155,8 +167,26 @@ def api_gateway_handler(event, context):
             if 'AuthenticationResult' in response:
                 id_token = response['AuthenticationResult']['IdToken']
                 access_token = response['AuthenticationResult']['AccessToken']
-                user_response = table.get_item(Key={'userID': email})
-                role = user_response.get('Item', {}).get('role', 'customer')
+                user_response = table.get_item(Key={'userID': email}).get('Item', {})
+                role = user_response.get('role', 'customer')
+                topic_arn = user_response.get('topicArn')
+                if not topic_arn:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            "Access-Control-Allow-Origin": "*",
+                            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                            "Access-Control-Allow-Methods": "POST, OPTIONS"
+                        },
+                        'body': json.dumps({'message': 'Topic ARN not found. Subscription may not be set up.'})
+                    }
+                # Send a welcome email via SNS
+                welcome_message = f"Hello {user_response.get('name', 'User')}! You have successfully logged into DALScooter at {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}. If this was not you, contact support immediately."
+                sns_client.publish(
+                    TopicArn=topic_arn,
+                    Message=welcome_message,
+                    Subject="Welcome to DALScooter"
+                )
                 return {
                     'statusCode': 200,
                     'headers': {
@@ -216,8 +246,26 @@ def api_gateway_handler(event, context):
             if 'AuthenticationResult' in response:
                 id_token = response['AuthenticationResult']['IdToken']
                 access_token = response['AuthenticationResult']['AccessToken']
-                user_response = table.get_item(Key={'userID': email})
-                role = user_response.get('Item', {}).get('role', 'customer')
+                user_response = table.get_item(Key={'userID': email}).get('Item', {})
+                role = user_response.get('role', 'customer')
+                topic_arn = user_response.get('topicArn')
+                if not topic_arn:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            "Access-Control-Allow-Origin": "*",
+                            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                            "Access-Control-Allow-Methods": "POST, OPTIONS"
+                        },
+                        'body': json.dumps({'message': 'Topic ARN not found. Subscription may not be set up.'})
+                    }
+                # Send a welcome email via SNS
+                welcome_message = f"Hello {user_response.get('name', 'User')}! You have successfully logged into DALScooter at {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}. If this was not you, contact support immediately."
+                sns_client.publish(
+                    TopicArn=topic_arn,
+                    Message=welcome_message,
+                    Subject="Welcome to DALScooter"
+                )
                 return {
                     'statusCode': 200,
                     'headers': {
@@ -320,7 +368,7 @@ def api_gateway_handler(event, context):
         }
 
 def generate_caesar_challenge():
-    shift = random.randint(1, 25)
+    shift = 1
     text = ''.join(random.choices(string.ascii_lowercase, k=5))
     cipher = ''.join(chr(((ord(c) - 97 + shift) % 26) + 97) for c in text)
     return text, cipher, shift

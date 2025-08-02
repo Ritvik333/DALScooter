@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, Bike, Battery, DollarSign, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { PlusCircle, Bike, Battery, DollarSign, Clock, CheckCircle, AlertCircle, ChevronDown } from 'lucide-react';
 import MyBookings from './MyBookings';
 import axios from 'axios';
 
@@ -27,6 +27,7 @@ const Dashboard = ({ role: propRole, onLogout }) => {
   const [error, setError] = useState(null);
   const [role, setRole] = useState('Guest');
   const [showMyBookings, setShowMyBookings] = useState(false);
+  const [showFeedback, setShowFeedback] = useState({}); // Object to track feedback visibility per vehicle
 
   useEffect(() => {
     const storedRole = localStorage.getItem('role');
@@ -60,6 +61,20 @@ const Dashboard = ({ role: propRole, onLogout }) => {
 
     fetchVehicles();
   }, []);
+
+  // Get sentiment color based on average score
+const getSentimentColor = (score) => {
+    if (score > 0.5) return 'bg-green-100 text-green-800';
+    if (score > 0) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-red-100 text-red-800';
+  };
+  
+  // Get sentiment icon based on average score
+  const getSentimentIcon = (score) => {
+    if (score > 0.5) return <span role="img" aria-label="smile">😊</span>;
+    if (score > 0) return <span role="img" aria-label="neutral">😐</span>;
+    return <span role="img" aria-label="frown">☹️</span>;
+  };
 
   const handleLogout = async () => {
     const accessToken = localStorage.getItem('AccessToken');
@@ -262,7 +277,7 @@ const Dashboard = ({ role: propRole, onLogout }) => {
 
       const result = await response.json();
       setBookingID(result.bookingID || '');
-      setBookingMessage('Booking successful!');
+      setBookingMessage('Booking requested!');
       setIsError(false);
       setTimeout(() => {
         setShowBookingModal(false);
@@ -277,6 +292,14 @@ const Dashboard = ({ role: propRole, onLogout }) => {
       setBookingMessage(error.message || 'Internal server error');
       setIsError(true);
     }
+  };
+
+  // Toggle feedback visibility for a specific vehicle
+  const toggleFeedback = (vehicleId) => {
+    setShowFeedback(prev => ({
+      ...prev,
+      [vehicleId]: !prev[vehicleId]
+    }));
   };
 
   return (
@@ -325,48 +348,75 @@ const Dashboard = ({ role: propRole, onLogout }) => {
           ) : vehicles.length === 0 ? (
             <p className="text-gray-600 text-xl">No vehicles to show.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
               {vehicles.map(vehicle => (
                 <div
                   key={vehicle.vehicleID}
-                  className="bg-gradient-to-r from-purple-500 to-teal-500 bg-opacity-90 text-white p-6 rounded-xl shadow-md hover:shadow-xl transition duration-300"
+                  className="bg-gradient-to-r from-gray-500 to-gray-700 bg-opacity-90 text-white p-4 rounded-xl shadow-md hover:shadow-xl transition duration-300"
                 >
-                  <div className="flex items-center mb-4">
-                    <Bike className="h-8 w-8 mr-4 text-white" />
-                    <h3 className="text-xl font-bold">{vehicle.type.toUpperCase()}</h3>
-                  </div>
-                  <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <Battery className="h-6 w-6 mr-2 text-white" />
-                      <p className="text-lg">Battery: {vehicle.batteryLife}%</p>
+                      <Bike className="h-6 w-6 mr-3 text-white" />
+                      <div>
+                        <h3 className="text-lg font-bold">{vehicle.type.toUpperCase()}</h3>
+                        <div className="space-y-1">
+                          <div className="flex items-center">
+                            <Battery className="h-5 w-5 mr-2 text-white" />
+                            <p className="text-sm">Battery: {vehicle.batteryLife}%</p>
+                          </div>
+                          <div className="flex items-center">
+                            <DollarSign className="h-5 w-5 mr-2 text-white" />
+                            <p className="text-sm">Hourly Rate: ${vehicle.hourlyRate.toFixed(1)}</p>
+                          </div>
+                          <p className="text-sm">Brand: {vehicle.franchiseName}</p>
+                          <p className="text-sm"><strong>Height Adjustable:</strong> {vehicle.heightAdjustable ? 'Yes' : 'No'}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <DollarSign className="h-6 w-6 mr-2 text-white" />
-                      <p className="text-lg">Hourly Rate: ${vehicle.hourlyRate.toFixed(1)}</p>
-                    </div>
-                    <div className="flex items-center">
-                      <p className="text-lg">Brand: {vehicle.franchiseName}</p>
-                    </div>
-                    <p className="text-lg"><strong>Height Adjustable:</strong> {vehicle.heightAdjustable ? 'Yes' : 'No'}</p>
                     {(role === 'customer' || role === 'Guest') && (
                       <button
                         onClick={() => handleBook(vehicle)}
-                        className="mt-4 w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-lg transition duration-300"
+                        className="ml-4 bg-teal-600 hover:bg-teal-700 text-white py-2 px-3 rounded-lg text-sm transition duration-300"
                       >
                         Book
                       </button>
                     )}
-                    {vehicle.feedbacks && vehicle.feedbacks.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-lg font-medium text-white">Reviews:</h4>
-                        {vehicle.feedbacks.map((feedback, index) => (
-                          <p key={index} className="text-sm text-white mt-1">
-                            {feedback.message} (Posted: {new Date(feedback.timestamp).toLocaleString()})
-                          </p>
-                        ))}
-                      </div>
-                    )}
                   </div>
+                  {vehicle.feedbacks && vehicle.feedbacks.length > 0 && (
+                    <div className="mt-2 w-full">
+                      <button
+                        onClick={() => toggleFeedback(vehicle.vehicleID)}
+                        className="flex items-center text-sm text-white hover:text-purple-200 focus:outline-none w-full justify-center"
+                      >
+                        <ChevronDown
+                          className={`h-4 w-4 mr-1 transform ${showFeedback[vehicle.vehicleID] ? 'rotate-180' : ''}`}
+                        />
+                        Show Feedback
+                      </button>
+                      {showFeedback[vehicle.vehicleID] && (
+  <div className="mt-2 space-y-2">
+    <h4 className="text-sm font-medium text-white">Feedback:</h4>
+    {/* Sentiment Summary */}
+    <div className="p-2 rounded-lg flex items-center justify-between">
+      <span className="text-sm font-medium text-white">Overall Sentiment:</span>
+      {vehicle.overall_sentiment && (
+        <div className={`px-3 py-1 rounded-full text-sm font-semibold flex items-center ${getSentimentColor(vehicle.overall_sentiment.average_score)}`}>
+          {getSentimentIcon(vehicle.overall_sentiment.average_score)}
+          <span className="ml-2">{vehicle.overall_sentiment.label}</span>
+        </div>
+      )}
+    </div>
+    {/* Feedback List */}
+    {vehicle.feedbacks.map((feedback, index) => (
+      <div key={index} className="bg-white text-black p-2 rounded-md flex justify-between items-center">
+        <span>Anonymous: {feedback.message}</span>
+        <span className="text-gray-600 text-xs">(Posted: {new Date(feedback.timestamp).toLocaleString()})</span>
+      </div>
+    ))}
+  </div>
+)}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -533,14 +583,14 @@ const Dashboard = ({ role: propRole, onLogout }) => {
                       className={`mt-6 p-4 rounded-xl text-center text-sm font-medium animate-fade-in ${getMessageStyle(bookingMessage)}`}
                     >
                       <div className="flex items-center justify-center">
-                        {bookingMessage.includes('successful') ? (
+                        {bookingMessage.includes('requested') ? (
                           <CheckCircle className="w-4 h-4 mr-2" />
                         ) : (
                           <AlertCircle className="w-4 h-4 mr-2" />
                         )}
                         <span>
                           {bookingMessage}
-                          {bookingMessage.includes('successful') && bookingID && (
+                          {bookingMessage.includes('requested') && bookingID && (
                             <span className="ml-2 font-bold">Booking ID: {bookingID}</span>
                           )}
                         </span>

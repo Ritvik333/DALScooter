@@ -64,7 +64,7 @@ const MyBookings = ({ email }) => {
     const contactEmail = localStorage.getItem('email') || 'ritvikb01021909@gmail.com';
 
     try {
-      const response = await fetch('https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/report-concern', {
+      const response = await fetch('https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/concerns', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ const MyBookings = ({ email }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('idToken')}`
+          // 'Authorization': `Bearer ${localStorage.getItem('idToken')}`
         },
         body: JSON.stringify({
           customerId,
@@ -135,6 +135,17 @@ const MyBookings = ({ email }) => {
     }
   };
 
+  const getStatusStyle = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return 'bg-yellow-200 text-yellow-800 border border-yellow-300';
+      case 'confirmed':
+        return 'bg-green-200 text-green-800 border border-green-300';
+      default:
+        return 'bg-gray-200 text-gray-800 border border-gray-300';
+    }
+  };
+
   if (loading) return <p className="text-gray-600 text-xl">Loading bookings...</p>;
   if (error) return <p className="text-red-600 text-xl">Error: {error}</p>;
   if (bookings.length === 0) return <p className="text-gray-600 text-xl">No bookings found.</p>;
@@ -153,16 +164,24 @@ const MyBookings = ({ email }) => {
             <p><strong>Start Time:</strong> {new Date(booking.startTime).toLocaleString()}</p>
             <p><strong>End Time:</strong> {new Date(booking.endTime).toLocaleString()}</p>
             <p><strong>Total Cost:</strong> ${booking.totalCost || 'N/A'}</p>
+            <p>
+              <strong>Status:</strong>{' '}
+              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(booking.status)}`}>
+                {booking.status || 'N/A'}
+              </span>
+            </p>
             <div className="mt-4 flex space-x-4">
               <button
                 onClick={() => handleReportConcern(booking.bookingID)}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                className={`bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors ${booking.status === 'pending' ? 'cursor-not-allowed opacity-50' : ''}`}
+                disabled={booking.status === 'pending'} // Disable if pending
               >
                 <AlertCircle className="w-4 h-4 mr-2 inline" /> Report Concern
               </button>
               <button
                 onClick={() => handleFeedback(booking.bookingID)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className={`bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors ${booking.status === 'pending' ? 'cursor-not-allowed opacity-50' : ''}`}
+                disabled={booking.status === 'pending'} // Disable if pending
               >
                 <MessageSquare className="w-4 h-4 mr-2 inline" /> Feedback
               </button>

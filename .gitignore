@@ -25,6 +25,12 @@ auth_handler.zip
 *.secret
 *.credentials
 
+# Python virtual environments
+venv/
+env/
+.venv/
+.env/
+
 # Log files and temporary files
 *.log
 *.tmp
@@ -33,7 +39,4 @@ auth_handler.zip
 .idea/
 *.vscode/
 *.sublime-project
-*.sublime-workspace
-
-# macOS system files
-.DS_Store
+*.sub*
