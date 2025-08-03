@@ -22,9 +22,10 @@ def handler(event, context):
 
         # Fetch vehicles managed by the operator
         vehicles_response = vehicles_table.scan(
-            FilterExpression='op_email = :email',
+            FilterExpression='operatorID = :email',
             ExpressionAttributeValues={':email': email}
         )
+        print("vehicles response:",vehicles_response)
         operator_vehicle_ids = [item['vehicleID'] for item in vehicles_response.get('Items', [])]
 
         if not operator_vehicle_ids:
@@ -44,6 +45,7 @@ def handler(event, context):
             ExpressionAttributeNames={'#status': 'status'},
             ExpressionAttributeValues={':status': 'pending', **{f':{i}': vid for i, vid in enumerate(operator_vehicle_ids)}}
         )
+        print("bookings response:", bookings_response)
         pending_bookings = bookings_response.get('Items', [])
 
         return {

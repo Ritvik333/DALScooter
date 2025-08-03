@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Bike, Battery, DollarSign, Clock, CheckCircle, AlertCircle, ChevronDown } from 'lucide-react';
 import MyBookings from './MyBookings';
+import BookingRequests from './BookingRequests';
 import axios from 'axios';
 
 const Dashboard = ({ role: propRole, onLogout }) => {
@@ -27,7 +28,8 @@ const Dashboard = ({ role: propRole, onLogout }) => {
   const [error, setError] = useState(null);
   const [role, setRole] = useState('Guest');
   const [showMyBookings, setShowMyBookings] = useState(false);
-  const [showFeedback, setShowFeedback] = useState({}); // Object to track feedback visibility per vehicle
+  const [showBookingRequests, setShowBookingRequests] = useState(false);
+  const [showFeedback, setShowFeedback] = useState({});
 
   useEffect(() => {
     const storedRole = localStorage.getItem('role');
@@ -52,9 +54,9 @@ const Dashboard = ({ role: propRole, onLogout }) => {
 
         const data = await response.json();
         setVehicles(data);
-        setLoading(false);
       } catch (err) {
         setError(err.message);
+      } finally {
         setLoading(false);
       }
     };
@@ -62,14 +64,12 @@ const Dashboard = ({ role: propRole, onLogout }) => {
     fetchVehicles();
   }, []);
 
-  // Get sentiment color based on average score
-const getSentimentColor = (score) => {
+  const getSentimentColor = (score) => {
     if (score > 0.5) return 'bg-green-100 text-green-800';
     if (score > 0) return 'bg-yellow-100 text-yellow-800';
     return 'bg-red-100 text-red-800';
   };
-  
-  // Get sentiment icon based on average score
+
   const getSentimentIcon = (score) => {
     if (score > 0.5) return <span role="img" aria-label="smile">😊</span>;
     if (score > 0) return <span role="img" aria-label="neutral">😐</span>;
@@ -294,7 +294,6 @@ const getSentimentColor = (score) => {
     }
   };
 
-  // Toggle feedback visibility for a specific vehicle
   const toggleFeedback = (vehicleId) => {
     setShowFeedback(prev => ({
       ...prev,
@@ -306,7 +305,7 @@ const getSentimentColor = (score) => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
       <aside className="w-64 bg-gray-800 text-white shadow-lg p-6">
-        <h2 className="text-2xl font-bold mb-8">Customer Panel</h2>
+        <h2 className="text-2xl font-bold mb-8">Dashboard Panel</h2>
         <ul className="space-y-4">
           <li className="font-semibold hover:text-purple-300 cursor-pointer">Dashboard</li>
           {role === 'customer' && (
@@ -315,6 +314,14 @@ const getSentimentColor = (score) => {
               onClick={() => setShowMyBookings(!showMyBookings)}
             >
               My Bookings
+            </li>
+          )}
+          {role === 'operator' && (
+            <li
+              className="text-gray-400 hover:text-purple-300 cursor-pointer"
+              onClick={() => setShowBookingRequests(!showBookingRequests)}
+            >
+              Booking Requests
             </li>
           )}
           <li className="text-gray-400 hover:text-purple-300 cursor-pointer">Settings</li>
@@ -339,6 +346,7 @@ const getSentimentColor = (score) => {
         {/* Main Content Area */}
         <main className="flex-1 p-6 relative">
           {role === 'customer' && showMyBookings && <MyBookings email={localStorage.getItem('email')} />}
+          {role === 'operator' && showBookingRequests && <BookingRequests email={localStorage.getItem('email')} />}
           {/* Vehicle Catalog */}
           <h2 className="text-2xl font-semibold mb-6 text-gray-800">Vehicle Catalog</h2>
           {loading ? (
@@ -394,27 +402,27 @@ const getSentimentColor = (score) => {
                         Show Feedback
                       </button>
                       {showFeedback[vehicle.vehicleID] && (
-  <div className="mt-2 space-y-2">
-    <h4 className="text-sm font-medium text-white">Feedback:</h4>
-    {/* Sentiment Summary */}
-    <div className="p-2 rounded-lg flex items-center justify-between">
-      <span className="text-sm font-medium text-white">Overall Sentiment:</span>
-      {vehicle.overall_sentiment && (
-        <div className={`px-3 py-1 rounded-full text-sm font-semibold flex items-center ${getSentimentColor(vehicle.overall_sentiment.average_score)}`}>
-          {getSentimentIcon(vehicle.overall_sentiment.average_score)}
-          <span className="ml-2">{vehicle.overall_sentiment.label}</span>
-        </div>
-      )}
-    </div>
-    {/* Feedback List */}
-    {vehicle.feedbacks.map((feedback, index) => (
-      <div key={index} className="bg-white text-black p-2 rounded-md flex justify-between items-center">
-        <span>Anonymous: {feedback.message}</span>
-        <span className="text-gray-600 text-xs">(Posted: {new Date(feedback.timestamp).toLocaleString()})</span>
-      </div>
-    ))}
-  </div>
-)}
+                        <div className="mt-2 space-y-2">
+                          <h4 className="text-sm font-medium text-white">Feedback:</h4>
+                          {/* Sentiment Summary */}
+                          <div className="p-2 rounded-lg flex items-center justify-between">
+                            <span className="text-sm font-medium text-white">Overall Sentiment:</span>
+                            {vehicle.overall_sentiment && (
+                              <div className={`px-3 py-1 rounded-full text-sm font-semibold flex items-center ${getSentimentColor(vehicle.overall_sentiment.average_score)}`}>
+                                {getSentimentIcon(vehicle.overall_sentiment.average_score)}
+                                <span className="ml-2">{vehicle.overall_sentiment.label}</span>
+                              </div>
+                            )}
+                          </div>
+                          {/* Feedback List */}
+                          {vehicle.feedbacks.map((feedback, index) => (
+                            <div key={index} className="bg-white text-black p-2 rounded-md flex justify-between items-center">
+                              <span>Anonymous: {feedback.message}</span>
+                              <span className="text-gray-600 text-xs">(Posted: {new Date(feedback.timestamp).toLocaleString()})</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
