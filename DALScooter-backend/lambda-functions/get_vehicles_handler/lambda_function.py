@@ -16,6 +16,18 @@ local_path = '/tmp/service-account-key.json'
 
 s3_client.download_file(bucket_name, object_key, local_path)
 
+def sentiment_label(score):
+    if score >= 0.6:
+        return "Excellent"
+    elif score >= 0.3:
+        return "Good"
+    elif score >= 0.0:
+        return "Moderate"
+    elif score >= -0.3:
+        return "Reasonable"
+    else:
+        return "Bad"
+
 # Helper function to convert Decimal to float/int for JSON serialization
 def decimal_to_json_serializable(obj):
     if isinstance(obj, Decimal):
@@ -76,6 +88,8 @@ def handler(event, context):
                 'average_score': total_score / len(vehicle_feedbacks) if vehicle_feedbacks else 0.0,
                 'total_magnitude': total_magnitude if vehicle_feedbacks else 0.0
             }
+            vehicle['overall_sentiment']['label'] = sentiment_label(vehicle['overall_sentiment']['average_score'])
+
 
         body = json.dumps(vehicles, default=decimal_to_json_serializable)
 
