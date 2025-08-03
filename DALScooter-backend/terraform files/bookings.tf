@@ -146,6 +146,9 @@ resource "aws_api_gateway_method" "get_bookings_method" {
   resource_id   = aws_api_gateway_resource.get_bookings_resource.id
   http_method   = "GET"
   authorization = "NONE"  # Optional: Add Cognito if needed
+  request_parameters = {
+    "method.request.querystring.email" = true  # Enable email as a required query parameter
+  }
 }
 
 resource "aws_api_gateway_integration" "get_bookings_integration" {

@@ -11,6 +11,9 @@ resource "aws_lambda_function" "get_vehicles" {
       TABLE_NAME = aws_dynamodb_table.dalscooter_vehicles.name
     }
   }
+  layers = [
+    "arn:aws:lambda:us-east-1:101784748999:layer:google:5"
+  ]
 }
 
 resource "aws_api_gateway_resource" "get_vehicles_resource" {

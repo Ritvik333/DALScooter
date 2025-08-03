@@ -1,41 +1,40 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { BikeIcon as Scooter, ArrowLeft, Sparkles, LogIn, UserPlus, Eye } from 'lucide-react'
-import RegistrationForm from "./components/RegistrationForm"
-import LoginForm from "./components/LoginForm"
-import Dashboard from './components/Dashboard'
+import { useState, useEffect } from "react";
+import { BikeIcon as Scooter, ArrowLeft, Sparkles, LogIn, UserPlus, Eye } from 'lucide-react';
+import RegistrationForm from "./components/RegistrationForm";
+import LoginForm from "./components/LoginForm";
+import Dashboard from './components/Dashboard';
 
 const App = () => {
-  const [currentView, setCurrentView] = useState("home") // "home", "register", "login"
-  const [selectedRole, setSelectedRole] = useState(null)
+  const [currentView, setCurrentView] = useState("home"); // "home", "register", "login"
+  const [selectedRole, setSelectedRole] = useState(null);
   const [showDashboard, setShowDashboard] = useState(false);
 
   useEffect(() => {
-    const idToken = localStorage.getItem('idToken')
+    const idToken = localStorage.getItem('idToken');
     if (idToken) {
-      const role = localStorage.getItem('role') || 'customer'
-      setSelectedRole(role)
-      setShowDashboard(true)
-      // setShowDashboard(false)
-      // setCurrentView("home")
+      const role = localStorage.getItem('role') || 'customer';
+      setSelectedRole(role);
+      setShowDashboard(true);
     }
-  }, [])
+  }, []);
+
   if (showDashboard) {
     return (
       <Dashboard
         role={selectedRole || "guest"}
         onLogout={() => {
-          localStorage.removeItem('idToken')
-          localStorage.removeItem('AccessToken')
-          localStorage.removeItem('email')
-          localStorage.removeItem('role')
-          setShowDashboard(false)
-          setSelectedRole(null)
-          setCurrentView("home")
+          localStorage.removeItem('idToken');
+          localStorage.removeItem('AccessToken');
+          localStorage.removeItem('email');
+          localStorage.removeItem('role');
+          setShowDashboard(false);
+          setSelectedRole(null);
+          setCurrentView("home");
         }}
       />
-    )
+    );
   }
 
   // Home screen with options to register or login
@@ -103,7 +102,6 @@ const App = () => {
             <button
               className="w-full group bg-gradient-to-r from-gray-500 to-gray-700 text-white px-8 py-4 rounded-xl hover:from-gray-700 hover:to-black transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center"
               onClick={() => {
-                // Ensure clean session
                 localStorage.removeItem('idToken');
                 localStorage.removeItem('AccessToken');
                 localStorage.removeItem('email');
@@ -131,7 +129,7 @@ const App = () => {
           <p>© 2024 DALScooter. All rights reserved.</p>
         </div>
       </div>
-    )
+    );
   }
 
   // Login view
@@ -146,17 +144,17 @@ const App = () => {
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             Back to home
           </button>
-          <LoginForm 
+          <LoginForm
             onBack={() => setCurrentView("home")}
             onSwitchToRegister={() => setCurrentView("register")}
             onLoginSuccess={(role) => {
-              setSelectedRole(role || "customer") // Default to "customer" if no role
-              setShowDashboard(true)
+              setSelectedRole(role || "customer");
+              setShowDashboard(true);
             }}
           />
         </div>
       </div>
-    )
+    );
   }
 
   // Registration role selection
@@ -221,8 +219,40 @@ const App = () => {
           </div>
         </div>
       </div>
-    )
+    );
   }
-  //
-}
-export default App
+
+  // Registration form view
+  if (currentView === "register" && selectedRole) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <button
+            onClick={() => {
+              setSelectedRole(null); // Go back to role selection
+            }}
+            className="mb-6 flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors group"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+            Back to role selection
+          </button>
+          <RegistrationForm
+            role={selectedRole}
+            onBack={() => {
+              setSelectedRole(null); // Go back to role selection
+            }}
+            onRegisterSuccess={(role) => {
+              setSelectedRole(role);
+              setShowDashboard(true);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback (should not be reached)
+  return <div>Unknown view</div>;
+};
+
+export default App;
