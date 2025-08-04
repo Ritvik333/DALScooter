@@ -90,18 +90,3 @@ output "support_tickets_table_name" {
   description = "Name of the Support Tickets DynamoDB table"
   value       = aws_dynamodb_table.support_tickets.name
 }
-
-resource "aws_dynamodb_table" "dalscooter_vehicles" {
-  name         = "dalscooter_vehicles"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "vehicleId"
-
-  attribute {
-    name = "vehicleId"
-    type = "S"
-  }
-}
-
-resource "aws_api_gateway_rest_api" "dalscooter_api" {
-  name = "dalscooter_api"
-}
