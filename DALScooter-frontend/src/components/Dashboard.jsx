@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { PlusCircle, Bike, Battery, DollarSign, Clock, CheckCircle, AlertCircle, ChevronDown } from 'lucide-react';
 import MyBookings from './MyBookings';
 import BookingRequests from './BookingRequests';
+import LexChatWidget from './LexChatWidget';
+import axios from 'axios';
+
 // import axios from 'axios';
 
 const Dashboard = ({ role: propRole, onLogout }) => {
@@ -628,6 +631,7 @@ const Dashboard = ({ role: propRole, onLogout }) => {
               </div>
             </div>
           )}
+          <LexChatWidget/>
         </main>
       </div>
     </div>
