@@ -214,7 +214,7 @@ resource "aws_api_gateway_integration_response" "auth_integration_response_200" 
   status_code = aws_api_gateway_method_response.auth_post_method_response_200.status_code
 
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin"  = "'http://localhost:3000'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
     "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type'"
   }
@@ -230,7 +230,7 @@ resource "aws_api_gateway_integration_response" "options_integration_response_20
   status_code = aws_api_gateway_method_response.options_method_response_200.status_code
 
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin"  = "'http://localhost:3000'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
     "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type'"
   }

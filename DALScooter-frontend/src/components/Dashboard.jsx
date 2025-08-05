@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PlusCircle, Bike, Battery, DollarSign, Clock, CheckCircle, AlertCircle, ChevronDown } from 'lucide-react';
 import MyBookings from './MyBookings';
 import BookingRequests from './BookingRequests';
-import axios from 'axios';
+// import axios from 'axios';
 
 const Dashboard = ({ role: propRole, onLogout }) => {
   const [showModal, setShowModal] = useState(false);
@@ -170,7 +170,8 @@ const Dashboard = ({ role: propRole, onLogout }) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('idToken');
-      const response = await fetch('https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/add-vehicle', {
+    //   https://42c66q9hb2.execute-api.us-east-1.amazonaws.com/prod
+      const response = await fetch('https://42c66q9hb2.execute-api.us-east-1.amazonaws.com/prod/add-vehicle', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
