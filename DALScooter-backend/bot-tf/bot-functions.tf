@@ -1,6 +1,6 @@
 # Define LabRole ARN (hardcoded since we can't query IAM)
 locals {
-  lab_role_arn = "arn:aws:iam::802805047192:role/LabRole"
+  lab_role_arn = "arn:aws:iam::101784748999:role/LabRole"
 }
 
 # DynamoDB Table for Support Tickets

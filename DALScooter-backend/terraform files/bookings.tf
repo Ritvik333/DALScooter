@@ -39,6 +39,7 @@ resource "aws_lambda_function" "book_vehicle" {
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.dalscooter_bookings.name
+      SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:101784748999:DALScooterBookingRequests"
     }
   }
 }

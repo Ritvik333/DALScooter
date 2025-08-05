@@ -161,6 +161,7 @@ resource "aws_lambda_function" "update_booking_status" {
     variables = {
       TABLE_NAME          = aws_dynamodb_table.dalscooter_bookings.name
       OPERATOR_TOPIC_ARN  = aws_sns_topic.booking_requests.arn # For notifications if needed
+      USERS_TABLE_NAME    = aws_dynamodb_table.dalscooter_users.name
     }
   }
 
