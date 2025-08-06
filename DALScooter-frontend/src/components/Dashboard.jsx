@@ -174,7 +174,7 @@ const Dashboard = ({ role: propRole, onLogout }) => {
     try {
       const token = localStorage.getItem('idToken');
     //   https://42c66q9hb2.execute-api.us-east-1.amazonaws.com/prod
-      const response = await fetch('https://42c66q9hb2.execute-api.us-east-1.amazonaws.com/prod/add-vehicle', {
+      const response = await fetch('https://e09ryoby30.execute-api.us-east-1.amazonaws.com/prod/add-vehicle', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

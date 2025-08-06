@@ -163,7 +163,7 @@ const MyBookings = ({ email }) => {
             <p><strong>Vehicle Type:</strong> {booking.vehicleType}</p>
             <p><strong>Start Time:</strong> {new Date(booking.startTime).toLocaleString()}</p>
             <p><strong>End Time:</strong> {new Date(booking.endTime).toLocaleString()}</p>
-            <p><strong>Total Cost:</strong> ${booking.totalCost || 'N/A'}</p>
+            {/* <p><strong>Total Cost:</strong> ${booking.totalCost || 'N/A'}</p> */}
             <p>
               <strong>Status:</strong>{' '}
               <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(booking.status)}`}>
