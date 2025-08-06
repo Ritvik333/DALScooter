@@ -26,7 +26,7 @@ The DALS Scooter project is a serverless, multi-cloud application developed for 
    - LabRole ARN (configured by lab environment).
 
 2. **Installation**:
-   - Clone the repository: `[git clone https://github.com/your-team/dals-scooter.git](https://github.com/Ritvik333/DALScooter.git)`.
+   - Clone the repository: `[https://github.com/Ritvik333/DALScooter.git]`.
    - Navigate to the project directory: `cd DALScooter`.
    - Install dependencies: `npm install` (in the `frontend` folder).
    - Configure environment variables in `.env` (e.g., AWS region, table names).
