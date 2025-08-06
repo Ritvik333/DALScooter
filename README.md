@@ -1,7 +1,7 @@
 # DALScooter Project
 
 ## Overview
-The DALS Scooter project is a serverless, multi-cloud application developed for CSCI 5410/S25 by a team of 4 members under the leadership of Sigma Jahan. This project, spanning approximately 2.5 months, aims to provide an eBike, gyroscooter, and segway rental system with features for guests, registered customers, and franchise operators. It includes user authentication, message passing, virtual assistance, notifications, data visualization, and a web application, implemented using AWS and GCP services with Terraform for infrastructure management.
+The DALScooter project is a serverless, multi-cloud application developed for CSCI 5410/S25 by a team of 4 members under the leadership of Sigma Jahan. This project, spanning approximately 2.5 months, aims to provide an eBike, gyroscooter, and segway rental system with features for guests, registered customers, and franchise operators. It includes user authentication, message passing, virtual assistance, notifications, data visualization, and a web application, implemented using AWS and GCP services with Terraform for infrastructure management.
 
 ## Features
 - **User Management & Authentication (Module 1)**: Signup with validation, multi-factor authentication (MFA) using Cognito, Lambda, and DynamoDB.
