@@ -46,7 +46,7 @@ The DALS Scooter project is a serverless, multi-cloud application developed for 
 - `lambda/`: Lambda function code (e.g., `get_vehicles_handler.py`).
 
 ## Contributions
-- **Team Members**: [List names, e.g., Akshita, Ritvik, Swapnik, Bishad].
+- **Team Members**: Akshita (B01020723), Ritvik (B01021909), Swapnik (B00992389), Bishad (B00973061).
 - **Sprints**: 
   - Sprint 1: Planning and initial setup.
   - Sprint 2: Module 1 and Module 3 implementation.
